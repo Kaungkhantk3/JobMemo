@@ -273,7 +273,13 @@ export function ApplicationForm({ open, onClose, editing }: Props) {
             disabled={loading || dupWarning}
             className="px-4 py-2 text-[13px] bg-[#0f1117] text-white rounded-md font-medium hover:opacity-85 disabled:opacity-50"
           >
-            {loading ? "Saving..." : "Save Application"}
+            {loading
+              ? editing
+                ? "Updating..."
+                : "Creating..."
+              : editing
+                ? "Update Application"
+                : "Save Application"}
           </button>
         </div>
       </div>

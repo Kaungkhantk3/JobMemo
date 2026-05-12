@@ -3,17 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
-const navItems = [
-  { label: "Dashboard", href: "/" },
-  { label: "Applications", href: "/applications" },
-  { label: "Interviews", href: "/interviews" },
-];
-const moreItems = [
-  { label: "Analytics", href: "/analytics" },
-  { label: "Gmail Sync", href: "/gmail" },
-  { label: "Settings", href: "/settings" },
-];
+const navItems = [{ label: "Dashboard", href: "/" }];
+
+const moreItems: { label: string; href: string }[] = [];
 
 export function SidebarWrapper({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -39,39 +33,43 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
 
   const Sidebar = ({ showClose = false }: { showClose?: boolean }) => (
     <aside className="w-[220px] flex-shrink-0 bg-[#0f1117] flex flex-col h-full">
-      <div className="px-5 py-4 border-b border-white/[0.08] flex items-center justify-between">
-        <div>
-          <p className="text-white text-[15px] font-medium tracking-tight">
-            <span className="mr-1.5">💼</span>JobTracker
-          </p>
-          <p className="text-white/30 text-[11px] mt-0.5">
-            Application Dashboard
-          </p>
-        </div>
-        {showClose && (
-          <button
-            onClick={() => setOpen(false)}
-            aria-label="Close menu"
-            className="text-white/40 hover:text-white transition-colors p-1 rounded"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        )}
-      </div>
+      <div className="px-4 py-5 border-b border-white/[0.08]">
+        <div className="flex items-center justify-between gap-3 min-w-0">
+          <div className="px-6 py-6 border-b border-white/[0.08]">
+            <Image
+              src="/logo.png"
+              alt="JobMemo Logo"
+              width={150}
+              height={40}
+              priority
+              className="h-auto w-auto object-contain"
+            />
+          </div>
 
+          {showClose && (
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close menu"
+              className="text-white/40 hover:text-white transition-colors p-1 rounded shrink-0"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
       <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-y-auto">
         <p className="text-white/25 text-[10px] uppercase tracking-widest px-2.5 mb-1.5 mt-2">
           Main
@@ -92,7 +90,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
           <div className="w-7 h-7 rounded-full bg-[#378ADD] flex items-center justify-center text-[11px] font-medium text-white flex-shrink-0">
             YO
           </div>
-          <span className="text-white/50 text-[12px] truncate">Your Name</span>
+          <span className="text-white/50 text-[12px] truncate">Local User</span>
         </div>
       </div>
     </aside>
@@ -146,9 +144,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <span className="text-white text-[14px] font-medium">
-            💼 JobTracker
-          </span>
+          <span className="text-white text-[14px] font-medium">JobMemo</span>
         </div>
 
         <main className="flex-1 overflow-hidden">{children}</main>
