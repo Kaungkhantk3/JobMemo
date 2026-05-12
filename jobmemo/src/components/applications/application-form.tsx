@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Application,
   ApplicationStatus,
@@ -48,7 +49,9 @@ export function ApplicationForm({ open, onClose, editing }: Props) {
         jobUrl: editing.jobUrl ?? "",
         status: editing.status,
         notes: editing.notes ?? "",
-        appliedAt: editing.appliedAt ?? new Date().toISOString().split("T")[0],
+        appliedAt: editing.appliedAt
+          ? new Date(editing.appliedAt).toISOString().split("T")[0]
+          : "",
       });
     } else {
       setForm(empty);
@@ -95,13 +98,27 @@ export function ApplicationForm({ open, onClose, editing }: Props) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          appliedAt: form.appliedAt || null,
+          jobUrl: form.jobUrl || null,
+          notes: form.notes || null,
+        }),
       });
       if (!res.ok) {
-        const d = await res.json();
-        setError(d.error ?? "Something went wrong.");
+        const data = await res.json();
+
+        if (res.status === 409) {
+          toast.error("You already applied to this role");
+          setDupWarning(true);
+          return;
+        }
+
+        toast.error(data.error || "Something went wrong");
+        setError(data.error || "Something went wrong");
         return;
       }
+      toast.success(editing ? "Application updated" : "Application created");
       router.refresh();
       onClose();
     } finally {

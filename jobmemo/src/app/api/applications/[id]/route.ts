@@ -1,29 +1,34 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-interface Params {
-  params: {
+type RouteContext = {
+  params: Promise<{
     id: string;
-  };
-}
+  }>;
+};
 
-export async function PATCH(req: Request, { params }: Params) {
+export async function PATCH(req: Request, context: RouteContext) {
   try {
+    const { id } = await context.params;
     const body = await req.json();
 
     const updatedApplication = await prisma.application.update({
       where: {
-        id: params.id,
+        id,
       },
       data: {
-        ...body,
-        appliedAt: body.appliedAt ? new Date(body.appliedAt) : undefined,
+        company: body.company,
+        position: body.position,
+        jobUrl: body.jobUrl || null,
+        notes: body.notes || null,
+        status: body.status,
+        appliedAt: body.appliedAt ? new Date(body.appliedAt) : null,
       },
     });
 
     return NextResponse.json(updatedApplication);
   } catch (error) {
-    console.error(error);
+    console.error("PATCH /api/applications/[id] error:", error);
 
     return NextResponse.json(
       { error: "Failed to update application" },
@@ -32,11 +37,13 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(req: Request, { params }: Params) {
+export async function DELETE(req: Request, context: RouteContext) {
   try {
+    const { id } = await context.params;
+
     await prisma.application.delete({
       where: {
-        id: params.id,
+        id,
       },
     });
 
@@ -44,7 +51,7 @@ export async function DELETE(req: Request, { params }: Params) {
       message: "Application deleted",
     });
   } catch (error) {
-    console.error(error);
+    console.error("DELETE /api/applications/[id] error:", error);
 
     return NextResponse.json(
       { error: "Failed to delete application" },

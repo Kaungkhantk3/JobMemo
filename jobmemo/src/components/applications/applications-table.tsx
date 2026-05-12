@@ -18,8 +18,7 @@ const STATUSES: ApplicationStatus[] = [
 
 function fmtDate(d?: string | null) {
   if (!d) return "—";
-  const date = new Date(d);
-  return date.toLocaleDateString("en-GB", {
+  return new Date(d).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -38,14 +37,13 @@ export function ApplicationsTable({
 
   const filtered = applications.filter((a) => {
     const q = search.toLowerCase();
-    const matchQ =
-      a.company.toLowerCase().includes(q) ||
-      a.position.toLowerCase().includes(q);
-    const matchS = !statusFilter || a.status === statusFilter;
-    return matchQ && matchS;
+    return (
+      (a.company.toLowerCase().includes(q) ||
+        a.position.toLowerCase().includes(q)) &&
+      (!statusFilter || a.status === statusFilter)
+    );
   });
 
-  // Stats
   const total = applications.length;
   const interviews = applications.filter(
     (a) => a.status === "INTERVIEW",
@@ -58,10 +56,10 @@ export function ApplicationsTable({
 
   return (
     <>
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-2.5 mb-5">
+      {/* Stats — 2 cols on mobile, 4 on desktop */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-2.5 mb-4 md:mb-5">
         {[
-          { label: "Total Applications", value: total, sub: "all time" },
+          { label: "Total", value: total, sub: "all time" },
           {
             label: "Interviews",
             value: interviews,
@@ -74,15 +72,15 @@ export function ApplicationsTable({
             sub: "received",
             valueColor: "text-[#0F6E56]",
           },
-          { label: "Pending Reply", value: pending, sub: "applied + ghosted" },
+          { label: "Pending", value: pending, sub: "applied + ghosted" },
         ].map(({ label, value, sub, valueColor }) => (
           <div
             key={label}
-            className="bg-white border border-zinc-200/80 rounded-lg px-4 py-3.5"
+            className="bg-white border border-zinc-200/80 rounded-lg px-3 py-3 md:px-4 md:py-3.5"
           >
-            <p className="text-[11px] text-zinc-400 mb-1.5">{label}</p>
+            <p className="text-[11px] text-zinc-400 mb-1">{label}</p>
             <p
-              className={`text-[22px] font-medium leading-none ${valueColor ?? "text-zinc-900"}`}
+              className={`text-[20px] md:text-[22px] font-medium leading-none ${valueColor ?? "text-zinc-900"}`}
             >
               {value}
             </p>
@@ -92,7 +90,8 @@ export function ApplicationsTable({
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-2.5 mb-3.5">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
+        {/* Search */}
         <div className="relative flex-1">
           <svg
             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
@@ -116,47 +115,116 @@ export function ApplicationsTable({
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className="px-3 py-2 border border-zinc-200 rounded-md text-[13px] bg-white outline-none focus:border-zinc-400"
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as ApplicationStatus | "")
-          }
-        >
-          <option value="">All Statuses</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s.charAt(0) + s.slice(1).toLowerCase()}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={() => {
-            setEditing(null);
-            setFormOpen(true);
-          }}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#0f1117] text-white rounded-md text-[13px] font-medium hover:opacity-85 transition-opacity"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+
+        <div className="flex gap-2">
+          {/* Filter */}
+          <select
+            className="flex-1 sm:flex-none px-3 py-2 border border-zinc-200 rounded-md text-[13px] bg-white outline-none focus:border-zinc-400"
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as ApplicationStatus | "")
+            }
           >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Add Application
-        </button>
+            <option value="">All Statuses</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s.charAt(0) + s.slice(1).toLowerCase()}
+              </option>
+            ))}
+          </select>
+
+          {/* Add button */}
+          <button
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#0f1117] text-white rounded-md text-[13px] font-medium hover:opacity-85 transition-opacity whitespace-nowrap"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span className="hidden sm:inline">Add Application</span>
+            <span className="sm:hidden">Add</span>
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-zinc-200/80 rounded-lg overflow-hidden">
+      {/* Mobile: card list */}
+      <div className="md:hidden flex flex-col gap-2">
+        {filtered.length === 0 ? (
+          <div className="bg-white border border-zinc-200/80 rounded-lg py-12 text-center text-zinc-400 text-[13px]">
+            No applications found
+          </div>
+        ) : (
+          filtered.map((app) => (
+            <div
+              key={app.id}
+              className="bg-white border border-zinc-200/80 rounded-lg px-4 py-3.5"
+            >
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-zinc-900 text-[14px] truncate">
+                    {app.company}
+                  </p>
+                  <p className="text-zinc-500 text-[12px] truncate mt-0.5">
+                    {app.position}
+                  </p>
+                </div>
+                <StatusBadge status={app.status} />
+              </div>
+              <div className="flex items-center justify-between mt-2.5">
+                <div className="text-[11px] text-zinc-400 space-y-0.5">
+                  <p>Applied: {fmtDate(app.appliedAt)}</p>
+                  {app.notes && (
+                    <p className="truncate max-w-[200px]">{app.notes}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      setEditing(app);
+                      setFormOpen(true);
+                    }}
+                    aria-label="Edit"
+                    className="p-1.5 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <DeleteApplicationButton id={app.id} />
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block bg-white border border-zinc-200/80 rounded-lg overflow-hidden">
         <table className="w-full text-[13px] table-fixed">
           <colgroup>
             <col style={{ width: "22%" }} />
@@ -233,7 +301,7 @@ export function ApplicationsTable({
                           setEditing(app);
                           setFormOpen(true);
                         }}
-                        aria-label="Edit application"
+                        aria-label="Edit"
                         className="p-1.5 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
                       >
                         <svg
