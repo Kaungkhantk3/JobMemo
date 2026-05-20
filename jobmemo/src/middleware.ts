@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-import { auth } from "@/auth";
+export function middleware(req: NextRequest) {
+  const session =
+    req.cookies.get("__Secure-authjs.session-token") ||
+    req.cookies.get("authjs.session-token");
 
-export default auth((req) => {
-  if (!req.auth && req.nextUrl.pathname !== "/login") {
+  const isLoginPage = req.nextUrl.pathname === "/login";
+
+  if (!session && !isLoginPage) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
-});
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: ["/((?!api|_next|favicon.ico).*)"],
