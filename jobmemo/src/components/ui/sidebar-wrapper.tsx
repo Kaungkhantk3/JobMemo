@@ -9,29 +9,46 @@ const navItems = [{ label: "Dashboard", href: "/" }];
 
 const moreItems: { label: string; href: string }[] = [];
 
-export function SidebarWrapper({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const pathname = usePathname();
+function NavLink({
+  href,
+  label,
+  pathname,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  const active = pathname === href;
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`flex items-center px-2.5 py-2 rounded-md text-[13px] transition-colors
+        ${
+          active
+            ? "bg-white/10 text-white"
+            : "text-white/50 hover:text-white/85 hover:bg-white/[0.06]"
+        }`}
+    >
+      {label}
+    </Link>
+  );
+}
 
-  function NavLink({ href, label }: { href: string; label: string }) {
-    const active = pathname === href;
-    return (
-      <Link
-        href={href}
-        onClick={() => setOpen(false)}
-        className={`flex items-center px-2.5 py-2 rounded-md text-[13px] transition-colors
-          ${
-            active
-              ? "bg-white/10 text-white"
-              : "text-white/50 hover:text-white/85 hover:bg-white/[0.06]"
-          }`}
-      >
-        {label}
-      </Link>
-    );
-  }
-
-  const Sidebar = ({ showClose = false }: { showClose?: boolean }) => (
+function Sidebar({
+  pathname,
+  onNavigate,
+  onClose,
+  showClose = false,
+}: {
+  pathname: string;
+  onNavigate: () => void;
+  onClose: () => void;
+  showClose?: boolean;
+}) {
+  return (
     <aside className="w-[220px] flex-shrink-0 bg-[#0f1117] flex flex-col h-full">
       <div className="px-4 py-5 border-b border-white/[0.08]">
         <div className="flex items-center justify-between gap-3 min-w-0">
@@ -48,7 +65,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
 
           {showClose && (
             <button
-              onClick={() => setOpen(false)}
+              onClick={onClose}
               aria-label="Close menu"
               className="text-white/40 hover:text-white transition-colors p-1 rounded shrink-0"
             >
@@ -75,13 +92,25 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
           Main
         </p>
         {navItems.map((item) => (
-          <NavLink key={item.href} {...item} />
+          <NavLink
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            pathname={pathname}
+            onNavigate={onNavigate}
+          />
         ))}
         <p className="text-white/25 text-[10px] uppercase tracking-widest px-2.5 mb-1.5 mt-4">
           More
         </p>
         {moreItems.map((item) => (
-          <NavLink key={item.href} {...item} />
+          <NavLink
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            pathname={pathname}
+            onNavigate={onNavigate}
+          />
         ))}
       </nav>
 
@@ -95,12 +124,21 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
       </div>
     </aside>
   );
+}
+
+export function SidebarWrapper({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {/* Desktop sidebar */}
       <div className="hidden md:flex">
-        <Sidebar />
+        <Sidebar
+          pathname={pathname}
+          onNavigate={() => setOpen(false)}
+          onClose={() => setOpen(false)}
+        />
       </div>
 
       {/* Mobile overlay */}
@@ -116,7 +154,12 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
         className={`fixed inset-y-0 left-0 z-50 md:hidden transition-transform duration-200
           ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <Sidebar showClose />
+        <Sidebar
+          pathname={pathname}
+          onNavigate={() => setOpen(false)}
+          onClose={() => setOpen(false)}
+          showClose
+        />
       </div>
 
       {/* Main */}
