@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { Application } from "@/types/application";
 import { ApplicationsTable } from "@/components/applications/applications-table";
 
@@ -11,6 +12,7 @@ async function getApplications(): Promise<Application[]> {
 
     const res = await fetch(`${baseUrl}/api/applications`, {
       cache: "no-store",
+      next: { revalidate: 0 },
     });
 
     if (!res.ok) return [];
