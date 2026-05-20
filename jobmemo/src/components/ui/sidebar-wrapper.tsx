@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { signOut } from "next-auth/react";
+import { LayoutDashboard, LogOut, UserCircle } from "lucide-react";
 
 type SidebarUser = {
   name?: string | null;
@@ -12,18 +13,20 @@ type SidebarUser = {
   image?: string | null;
 };
 
-const navItems = [{ label: "Dashboard", href: "/" }];
+const navItems = [{ label: "Dashboard", href: "/", icon: LayoutDashboard }];
 
 const moreItems: { label: string; href: string }[] = [];
 
 function NavLink({
   href,
   label,
+  icon: Icon,
   pathname,
   onNavigate,
 }: {
   href: string;
   label: string;
+  icon: typeof LayoutDashboard;
   pathname: string;
   onNavigate: () => void;
 }) {
@@ -32,14 +35,15 @@ function NavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`flex items-center px-2.5 py-2 rounded-md text-[13px] transition-colors
+      className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-all duration-200
         ${
           active
-            ? "bg-white/10 text-white"
-            : "text-white/50 hover:text-white/85 hover:bg-white/6"
+            ? "bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+            : "text-white/55 hover:-translate-y-0.5 hover:bg-white/6 hover:text-white"
         }`}
     >
-      {label}
+      <Icon className="h-4 w-4 shrink-0 text-current opacity-85 transition-transform duration-200 group-hover:scale-105" />
+      <span>{label}</span>
     </Link>
   );
 }
@@ -71,11 +75,11 @@ function Sidebar({
     <aside className="w-55 shrink-0 bg-[#0f1117] flex flex-col h-full">
       <div className="px-4 py-5 border-b border-white/8">
         <div className="flex items-center justify-between gap-3 min-w-0">
-          <div className="px-6 py-6 border-b border-white/8">
+          <div className="px-4 py-2">
             <Image
               src="/logo.png"
               alt="JobMemo Logo"
-              width={150}
+              width={138}
               height={40}
               priority
               className="h-auto w-auto object-contain"
@@ -115,6 +119,7 @@ function Sidebar({
             key={item.href}
             href={item.href}
             label={item.label}
+            icon={item.icon}
             pathname={pathname}
             onNavigate={onNavigate}
           />
@@ -127,6 +132,7 @@ function Sidebar({
             key={item.href}
             href={item.href}
             label={item.label}
+            icon={LayoutDashboard}
             pathname={pathname}
             onNavigate={onNavigate}
           />
@@ -134,7 +140,8 @@ function Sidebar({
       </nav>
 
       <div className="px-4 py-4 border-t border-white/8">
-        <div className="flex items-center gap-2.5">
+        <div className="mb-3 flex items-center gap-2.5 rounded-xl bg-white/[0.03] px-3 py-2">
+          <UserCircle className="h-4 w-4 shrink-0 text-white/55" />
           <div className="w-7 h-7 rounded-full bg-[#378ADD] flex items-center justify-center text-[11px] font-medium text-white shrink-0 overflow-hidden">
             {user.image ? (
               <Image
@@ -164,8 +171,9 @@ function Sidebar({
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="px-3 py-2 text-[13px] text-white/70 hover:text-white bg-transparent rounded"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-[13px] text-white/70 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white"
           >
+            <LogOut className="h-4 w-4" />
             Logout
           </button>
         </div>

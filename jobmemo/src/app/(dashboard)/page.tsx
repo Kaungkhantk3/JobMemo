@@ -22,8 +22,8 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="hidden md:flex items-center bg-white border-b border-zinc-200 px-6 py-3.5">
+    <div className="flex h-full flex-col overflow-hidden bg-linear-to-br from-zinc-50 to-white">
+      <div className="hidden md:flex items-center border-b border-zinc-200/80 bg-white/70 px-6 py-3.5 backdrop-blur">
         <h1 className="text-[15px] font-medium text-zinc-900">Applications</h1>
       </div>
 

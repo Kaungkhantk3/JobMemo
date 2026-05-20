@@ -1,10 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import { Application, ApplicationStatus } from "@/types/application";
 import { StatusBadge } from "./status-badge";
 import { DeleteApplicationButton } from "./delete-application-button";
 import { ApplicationForm } from "./application-form";
+import {
+  BriefcaseBusiness,
+  Clock3,
+  MessageSquareText,
+  Plus,
+  Search,
+  SearchX,
+  Trophy,
+} from "lucide-react";
 
 const STATUSES: ApplicationStatus[] = [
   "SAVED",
@@ -54,62 +63,98 @@ export function ApplicationsTable({
   ).length;
   const interviewRate = total ? Math.round((interviews / total) * 100) : 0;
 
+  const stats = [
+    {
+      label: "Total",
+      value: total,
+      sub: "all time",
+      icon: BriefcaseBusiness,
+      iconBg: "bg-slate-900/5",
+      iconColor: "text-slate-700",
+    },
+    {
+      label: "Interviews",
+      value: interviews,
+      sub: `${interviewRate}% rate`,
+      icon: MessageSquareText,
+      valueColor: "text-[#27500A]",
+      iconBg: "bg-emerald-500/10",
+      iconColor: "text-emerald-700",
+    },
+    {
+      label: "Offers",
+      value: offers,
+      sub: "received",
+      icon: Trophy,
+      valueColor: "text-[#0F6E56]",
+      iconBg: "bg-cyan-500/10",
+      iconColor: "text-cyan-700",
+    },
+    {
+      label: "Pending",
+      value: pending,
+      sub: "applied + ghosted",
+      icon: Clock3,
+      iconBg: "bg-amber-500/10",
+      iconColor: "text-amber-700",
+    },
+  ] satisfies Array<{
+    label: string;
+    value: number;
+    sub: string;
+    icon: ComponentType<{ className?: string }>;
+    valueColor?: string;
+    iconBg: string;
+    iconColor: string;
+  }>;
+
+  const EmptyStateIcon = filtered.length === 0 ? SearchX : BriefcaseBusiness;
+
   return (
     <>
       {/* Stats — 2 cols on mobile, 4 on desktop */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-2.5 mb-4 md:mb-5">
-        {[
-          { label: "Total", value: total, sub: "all time" },
-          {
-            label: "Interviews",
-            value: interviews,
-            sub: `${interviewRate}% rate`,
-            valueColor: "text-[#27500A]",
-          },
-          {
-            label: "Offers",
-            value: offers,
-            sub: "received",
-            valueColor: "text-[#0F6E56]",
-          },
-          { label: "Pending", value: pending, sub: "applied + ghosted" },
-        ].map(({ label, value, sub, valueColor }) => (
-          <div
-            key={label}
-            className="bg-white border border-zinc-200/80 rounded-lg px-3 py-3 md:px-4 md:py-3.5"
-          >
-            <p className="text-[11px] text-zinc-400 mb-1">{label}</p>
-            <p
-              className={`text-[20px] md:text-[22px] font-medium leading-none ${valueColor ?? "text-zinc-900"}`}
+        {stats.map(
+          ({
+            label,
+            value,
+            sub,
+            valueColor,
+            icon: Icon,
+            iconBg,
+            iconColor,
+          }) => (
+            <div
+              key={label}
+              className="group rounded-2xl border border-zinc-200/80 bg-white px-3 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md md:px-4 md:py-3.5"
             >
-              {value}
-            </p>
-            <p className="text-[11px] text-zinc-400 mt-1">{sub}</p>
-          </div>
-        ))}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] text-zinc-400 mb-1">{label}</p>
+                  <p
+                    className={`text-[20px] md:text-[22px] font-medium leading-none ${valueColor ?? "text-zinc-900"}`}
+                  >
+                    {value}
+                  </p>
+                  <p className="text-[11px] text-zinc-400 mt-1">{sub}</p>
+                </div>
+
+                <div className={`rounded-xl p-2 ${iconBg}`}>
+                  <Icon className={`h-4.5 w-4.5 ${iconColor}`} />
+                </div>
+              </div>
+            </div>
+          ),
+        )}
       </div>
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
         {/* Search */}
         <div className="relative flex-1">
-          <svg
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
-            className="w-full pl-8 pr-3 py-2 border border-zinc-200 rounded-md text-[13px] outline-none focus:border-zinc-400 bg-white"
+            className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-8 pr-3 text-[13px] outline-none transition-shadow focus:border-zinc-300 focus:shadow-sm"
             placeholder="Search company or position..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -119,7 +164,7 @@ export function ApplicationsTable({
         <div className="flex gap-2">
           {/* Filter */}
           <select
-            className="flex-1 sm:flex-none px-3 py-2 border border-zinc-200 rounded-md text-[13px] bg-white outline-none focus:border-zinc-400"
+            className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[13px] outline-none transition-shadow focus:border-zinc-300 focus:shadow-sm sm:flex-none"
             value={statusFilter}
             onChange={(e) =>
               setStatusFilter(e.target.value as ApplicationStatus | "")
@@ -139,22 +184,9 @@ export function ApplicationsTable({
               setEditing(null);
               setFormOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#0f1117] text-white rounded-md text-[13px] font-medium hover:opacity-85 transition-opacity whitespace-nowrap"
+            className="flex items-center gap-2 rounded-lg bg-[#0f1117] px-3.5 py-2 text-[13px] font-medium text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#171a22] hover:shadow-md whitespace-nowrap"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Application</span>
             <span className="sm:hidden">Add</span>
           </button>
@@ -164,8 +196,27 @@ export function ApplicationsTable({
       {/* Mobile: card list */}
       <div className="md:hidden flex flex-col gap-2">
         {filtered.length === 0 ? (
-          <div className="bg-white border border-zinc-200/80 rounded-lg py-12 text-center text-zinc-400 text-[13px]">
-            No applications found
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-14 text-center">
+            <div className="mb-4 rounded-2xl bg-zinc-50 p-3 text-zinc-500">
+              <EmptyStateIcon className="h-6 w-6" />
+            </div>
+            <h3 className="text-[15px] font-medium text-zinc-900">
+              No applications yet
+            </h3>
+            <p className="mt-2 max-w-[240px] text-[13px] leading-5 text-zinc-500">
+              Start by adding your first job application.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#0f1117] px-4 py-2 text-[13px] font-medium text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#171a22] hover:shadow-md"
+            >
+              <Plus className="h-4 w-4" />
+              Add Application
+            </button>
           </div>
         ) : (
           filtered.map((app) => (
@@ -188,7 +239,7 @@ export function ApplicationsTable({
                 <div className="text-[11px] text-zinc-400 space-y-0.5">
                   <p>Applied: {fmtDate(app.appliedAt)}</p>
                   {app.notes && (
-                    <p className="truncate max-w-[200px]">{app.notes}</p>
+                    <p className="truncate max-w-50">{app.notes}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-1">
@@ -251,11 +302,29 @@ export function ApplicationsTable({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td
-                  colSpan={6}
-                  className="py-12 text-center text-zinc-400 text-[13px]"
-                >
-                  No applications found
+                <td colSpan={6} className="py-16">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="mb-4 rounded-2xl bg-zinc-50 p-3 text-zinc-500">
+                      <EmptyStateIcon className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-[15px] font-medium text-zinc-900">
+                      No applications yet
+                    </h3>
+                    <p className="mt-2 max-w-[260px] text-[13px] leading-5 text-zinc-500">
+                      Start by adding your first job application.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditing(null);
+                        setFormOpen(true);
+                      }}
+                      className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#0f1117] px-4 py-2 text-[13px] font-medium text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#171a22] hover:shadow-md"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Application
+                    </button>
+                  </div>
                 </td>
               </tr>
             ) : (
