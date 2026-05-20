@@ -1,10 +1,21 @@
 export const dynamic = "force-dynamic";
 
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ApplicationsTable } from "@/components/applications/applications-table";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
   const applications = await prisma.application.findMany({
+    where: {
+      userId: session.user.id,
+    },
     orderBy: {
       createdAt: "desc",
     },

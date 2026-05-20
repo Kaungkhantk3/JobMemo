@@ -5,6 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 
+type SidebarUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
 const navItems = [{ label: "Dashboard", href: "/" }];
 
 const moreItems: { label: string; href: string }[] = [];
@@ -42,14 +48,26 @@ function Sidebar({
   onNavigate,
   onClose,
   onSignOut,
+  user,
   showClose = false,
 }: {
   pathname: string;
   onNavigate: () => void;
   onClose: () => void;
   onSignOut: () => void;
+  user: SidebarUser;
   showClose?: boolean;
 }) {
+  const displayName = user.name ?? "Signed in user";
+  const displayEmail = user.email ?? "";
+  const initials = (user.name ?? user.email ?? "U")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
     <aside className="w-[220px] flex-shrink-0 bg-[#0f1117] flex flex-col h-full">
       <div className="px-4 py-5 border-b border-white/[0.08]">
@@ -118,10 +136,29 @@ function Sidebar({
 
       <div className="px-4 py-4 border-t border-white/[0.08]">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-[#378ADD] flex items-center justify-center text-[11px] font-medium text-white flex-shrink-0">
-            YO
+          <div className="w-7 h-7 rounded-full bg-[#378ADD] flex items-center justify-center text-[11px] font-medium text-white flex-shrink-0 overflow-hidden">
+            {user.image ? (
+              <Image
+                src={user.image}
+                alt={displayName}
+                width={28}
+                height={28}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              initials
+            )}
           </div>
-          <span className="text-white/50 text-[12px] truncate">Local User</span>
+          <div className="min-w-0">
+            <span className="block text-white/85 text-[12px] truncate">
+              {displayName}
+            </span>
+            {displayEmail ? (
+              <span className="block text-white/50 text-[11px] truncate">
+                {displayEmail}
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <div className="mt-3">
@@ -137,7 +174,13 @@ function Sidebar({
   );
 }
 
-export function SidebarWrapper({ children }: { children: React.ReactNode }) {
+export function SidebarWrapper({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: SidebarUser;
+}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -164,6 +207,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
           onNavigate={() => setOpen(false)}
           onClose={() => setOpen(false)}
           onSignOut={handleSignOut}
+          user={user}
         />
       </div>
 
@@ -185,6 +229,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
           onNavigate={() => setOpen(false)}
           onClose={() => setOpen(false)}
           onSignOut={handleSignOut}
+          user={user}
           showClose
         />
       </div>

@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -10,7 +11,24 @@ type RouteContext = {
 export async function PATCH(req: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
+
+    const existing = await prisma.application.findFirst({
+      where: {
+        id,
+        userId: session.user.id,
+      },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
     const updatedApplication = await prisma.application.update({
       where: {
@@ -40,6 +58,23 @@ export async function PATCH(req: Request, context: RouteContext) {
 export async function DELETE(req: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
+
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const existing = await prisma.application.findFirst({
+      where: {
+        id,
+        userId: session.user.id,
+      },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
     await prisma.application.delete({
       where: {

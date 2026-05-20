@@ -11,9 +11,9 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
 
-  if (!session) {
+  if (!session?.user?.id) {
     redirect("/login");
   }
 
-  return <SidebarWrapper>{children}</SidebarWrapper>;
+  return <SidebarWrapper user={session.user}>{children}</SidebarWrapper>;
 }

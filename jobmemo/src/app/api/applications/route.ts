@@ -1,9 +1,19 @@
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const applications = await prisma.application.findMany({
+      where: {
+        userId: session.user.id,
+      },
       orderBy: {
         createdAt: "desc",
       },
@@ -22,6 +32,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
 
     const { company, position, jobUrl, notes, status, appliedAt } = body;
@@ -35,6 +51,7 @@ export async function POST(req: Request) {
 
     const existingApplication = await prisma.application.findFirst({
       where: {
+        userId: session.user.id,
         company,
         position,
       },
@@ -55,6 +72,7 @@ export async function POST(req: Request) {
         notes,
         status,
         appliedAt: appliedAt ? new Date(appliedAt) : null,
+        userId: session.user.id,
       },
     });
 
