@@ -3,20 +3,20 @@ import { ApplicationsTable } from "@/components/applications/applications-table"
 
 async function getApplications(): Promise<Application[]> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/applications`,
-      {
-        cache: "no-store",
-      },
-    );
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000";
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch applications");
-    }
+    const res = await fetch(`${baseUrl}/api/applications`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) return [];
 
     return await res.json();
-  } catch (error) {
-    console.error(error);
+  } catch {
     return [];
   }
 }
