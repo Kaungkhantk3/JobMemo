@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { signOut } from "next-auth/react";
-import { LayoutDashboard, LogOut, UserCircle } from "lucide-react";
+import { LayoutDashboard, LogOut, Mail, UserCircle } from "lucide-react";
 
 type SidebarUser = {
   name?: string | null;
@@ -13,9 +14,15 @@ type SidebarUser = {
   image?: string | null;
 };
 
-const navItems = [{ label: "Dashboard", href: "/", icon: LayoutDashboard }];
+type SidebarIcon = ComponentType<{ className?: string }>;
 
-const moreItems: { label: string; href: string }[] = [];
+const navItems: { label: string; href: string; icon: SidebarIcon }[] = [
+  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+];
+
+const moreItems: { label: string; href: string; icon: SidebarIcon }[] = [
+  { label: "Gmail Sync", href: "/gmail", icon: Mail },
+];
 
 function NavLink({
   href,
@@ -26,7 +33,7 @@ function NavLink({
 }: {
   href: string;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: SidebarIcon;
   pathname: string;
   onNavigate: () => void;
 }) {
