@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
-import { SidebarWrapper } from "@/components/ui/sidebar-wrapper";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -29,10 +28,8 @@ export default function RootLayout({
         className="antialiased"
         style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
       >
-        <SidebarWrapper>
-          {children}
-          <Toaster richColors position="top-right" />
-        </SidebarWrapper>
+        {children}
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );
