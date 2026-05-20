@@ -22,11 +22,13 @@ function hasGmailScope(scope?: string | null) {
 export function GmailStatusCard({
   user,
   account,
+  hasAccessToken = false,
 }: {
   user: GmailUser;
   account: GmailAccount;
+  hasAccessToken?: boolean;
 }) {
-  const gmailConnected = hasGmailScope(account?.scope);
+  const gmailConnected = hasGmailScope(account?.scope) && hasAccessToken;
   const googleConnected = !!account;
   const needsReconnect = googleConnected && !gmailConnected;
 
@@ -38,7 +40,7 @@ export function GmailStatusCard({
 
   return (
     <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
-      <div className="border-b border-zinc-200/80 bg-gradient-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
+      <div className="border-b border-zinc-200/80 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
