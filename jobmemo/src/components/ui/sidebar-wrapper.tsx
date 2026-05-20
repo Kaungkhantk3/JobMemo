@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { signOut } from "next-auth/react";
 
 type SidebarUser = {
   name?: string | null;
@@ -35,7 +36,7 @@ function NavLink({
         ${
           active
             ? "bg-white/10 text-white"
-            : "text-white/50 hover:text-white/85 hover:bg-white/[0.06]"
+            : "text-white/50 hover:text-white/85 hover:bg-white/6"
         }`}
     >
       {label}
@@ -47,14 +48,12 @@ function Sidebar({
   pathname,
   onNavigate,
   onClose,
-  onSignOut,
   user,
   showClose = false,
 }: {
   pathname: string;
   onNavigate: () => void;
   onClose: () => void;
-  onSignOut: () => void;
   user: SidebarUser;
   showClose?: boolean;
 }) {
@@ -69,10 +68,10 @@ function Sidebar({
     .toUpperCase();
 
   return (
-    <aside className="w-[220px] flex-shrink-0 bg-[#0f1117] flex flex-col h-full">
-      <div className="px-4 py-5 border-b border-white/[0.08]">
+    <aside className="w-55 shrink-0 bg-[#0f1117] flex flex-col h-full">
+      <div className="px-4 py-5 border-b border-white/8">
         <div className="flex items-center justify-between gap-3 min-w-0">
-          <div className="px-6 py-6 border-b border-white/[0.08]">
+          <div className="px-6 py-6 border-b border-white/8">
             <Image
               src="/logo.png"
               alt="JobMemo Logo"
@@ -134,9 +133,9 @@ function Sidebar({
         ))}
       </nav>
 
-      <div className="px-4 py-4 border-t border-white/[0.08]">
+      <div className="px-4 py-4 border-t border-white/8">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-[#378ADD] flex items-center justify-center text-[11px] font-medium text-white flex-shrink-0 overflow-hidden">
+          <div className="w-7 h-7 rounded-full bg-[#378ADD] flex items-center justify-center text-[11px] font-medium text-white shrink-0 overflow-hidden">
             {user.image ? (
               <Image
                 src={user.image}
@@ -163,7 +162,8 @@ function Sidebar({
 
         <div className="mt-3">
           <button
-            onClick={onSignOut}
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/login" })}
             className="px-3 py-2 text-[13px] text-white/70 hover:text-white bg-transparent rounded"
           >
             Logout
@@ -184,20 +184,6 @@ export function SidebarWrapper({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
-  const handleSignOut = async () => {
-    try {
-      await fetch("/api/auth/signout", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ callbackUrl: "/login" }),
-      });
-    } catch {
-      // ignore
-    }
-    setOpen(false);
-    window.location.href = "/login";
-  };
-
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {/* Desktop sidebar */}
@@ -206,7 +192,6 @@ export function SidebarWrapper({
           pathname={pathname}
           onNavigate={() => setOpen(false)}
           onClose={() => setOpen(false)}
-          onSignOut={handleSignOut}
           user={user}
         />
       </div>
@@ -228,7 +213,6 @@ export function SidebarWrapper({
           pathname={pathname}
           onNavigate={() => setOpen(false)}
           onClose={() => setOpen(false)}
-          onSignOut={handleSignOut}
           user={user}
           showClose
         />
@@ -237,7 +221,7 @@ export function SidebarWrapper({
       {/* Main */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Mobile topbar — hamburger only, no overlapping X */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#0f1117] border-b border-white/[0.08]">
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#0f1117] border-b border-white/8">
           <button
             onClick={() => setOpen(true)}
             aria-label="Open menu"
