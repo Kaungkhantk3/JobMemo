@@ -28,4 +28,4 @@ export interface CreateApplicationInput {
   appliedAt?: string;
 }
 
-export interface UpdateApplicationInput extends Partial<CreateApplicationInput> {}
+export type UpdateApplicationInput = Partial<CreateApplicationInput>;
