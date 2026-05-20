@@ -41,11 +41,13 @@ function Sidebar({
   pathname,
   onNavigate,
   onClose,
+  onSignOut,
   showClose = false,
 }: {
   pathname: string;
   onNavigate: () => void;
   onClose: () => void;
+  onSignOut: () => void;
   showClose?: boolean;
 }) {
   return (
@@ -121,6 +123,15 @@ function Sidebar({
           </div>
           <span className="text-white/50 text-[12px] truncate">Local User</span>
         </div>
+
+        <div className="mt-3">
+          <button
+            onClick={onSignOut}
+            className="px-3 py-2 text-[13px] text-white/70 hover:text-white bg-transparent rounded"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </aside>
   );
@@ -130,6 +141,20 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ callbackUrl: "/login" }),
+      });
+    } catch {
+      // ignore
+    }
+    setOpen(false);
+    window.location.href = "/login";
+  };
+
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {/* Desktop sidebar */}
@@ -138,6 +163,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
           pathname={pathname}
           onNavigate={() => setOpen(false)}
           onClose={() => setOpen(false)}
+          onSignOut={handleSignOut}
         />
       </div>
 
@@ -158,6 +184,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
           pathname={pathname}
           onNavigate={() => setOpen(false)}
           onClose={() => setOpen(false)}
+          onSignOut={handleSignOut}
           showClose
         />
       </div>
