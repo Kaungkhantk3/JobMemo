@@ -18,12 +18,18 @@ export default async function GmailPage() {
     redirect("/login");
   }
 
-  const account = await prisma.account.findFirst({
+  const googleAccounts = await prisma.account.findMany({
     where: {
       userId: session.user.id,
       provider: "google",
     },
   });
+
+  const account =
+    googleAccounts.find((entry) => entry.scope?.includes("gmail.readonly")) ??
+    googleAccounts.find((entry) => entry.scope?.includes(GMAIL_SCOPE)) ??
+    googleAccounts[0] ??
+    null;
 
   const hasGmailScope =
     !!account?.scope?.includes("gmail.readonly") ||
@@ -33,6 +39,7 @@ export default async function GmailPage() {
   const canFetchEmails = hasGmailScope && hasAccessToken;
 
   console.log("Gmail account debug", {
+    accountCount: googleAccounts.length,
     provider: account?.provider,
     scope: account?.scope ?? "none",
     hasAccessToken,
