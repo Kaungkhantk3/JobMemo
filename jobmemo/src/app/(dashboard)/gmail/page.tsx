@@ -4,12 +4,10 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getRecentJobEmails } from "@/lib/gmail";
+import { createGmailClient, getRecentJobEmails } from "@/lib/gmail";
 import { GmailStatusCard } from "@/components/gmail/gmail-status-card";
 import { GmailEmailList } from "@/components/gmail/gmail-email-list";
 import type { GmailMessage } from "@/types/gmail";
-
-const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
 export default async function GmailPage() {
   const session = await auth();
@@ -27,16 +25,15 @@ export default async function GmailPage() {
 
   const account =
     googleAccounts.find((entry) => entry.scope?.includes("gmail.readonly")) ??
-    googleAccounts.find((entry) => entry.scope?.includes(GMAIL_SCOPE)) ??
+    googleAccounts.find((entry) =>
+      entry.scope?.includes("https://www.googleapis.com/auth/gmail.readonly"),
+    ) ??
     googleAccounts[0] ??
     null;
 
-  const hasGmailScope =
-    !!account?.scope?.includes("gmail.readonly") ||
-    !!account?.scope?.includes(GMAIL_SCOPE);
   const hasAccessToken = !!account?.access_token;
   const hasRefreshToken = !!account?.refresh_token;
-  const canFetchEmails = hasGmailScope && hasAccessToken;
+  const canFetchEmails = hasAccessToken;
 
   console.log("Gmail account debug", {
     accountCount: googleAccounts.length,
@@ -48,9 +45,17 @@ export default async function GmailPage() {
 
   let emails: GmailMessage[] = [];
   let fetchError: string | undefined;
+  let gmailVerified = false;
 
   if (canFetchEmails && account?.access_token) {
     try {
+      const gmail = createGmailClient(account.access_token);
+
+      await gmail.users.getProfile({
+        userId: "me",
+      });
+
+      gmailVerified = true;
       emails = await getRecentJobEmails(account.access_token);
     } catch {
       fetchError = "Unable to fetch Gmail messages.";
@@ -68,6 +73,7 @@ export default async function GmailPage() {
           user={session.user}
           account={account}
           hasAccessToken={hasAccessToken}
+          gmailVerified={gmailVerified}
         />
 
         {process.env.NODE_ENV !== "production" ? (
@@ -98,7 +104,7 @@ export default async function GmailPage() {
           </section>
         ) : null}
 
-        {canFetchEmails ? (
+        {gmailVerified ? (
           <GmailEmailList
             emails={emails}
             syncedAtLabel="just now"

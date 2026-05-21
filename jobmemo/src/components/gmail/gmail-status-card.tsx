@@ -23,12 +23,15 @@ export function GmailStatusCard({
   user,
   account,
   hasAccessToken = false,
+  gmailVerified = false,
 }: {
   user: GmailUser;
   account: GmailAccount;
   hasAccessToken?: boolean;
+  gmailVerified?: boolean;
 }) {
-  const gmailConnected = hasGmailScope(account?.scope) && hasAccessToken;
+  const gmailConnected =
+    gmailVerified || (hasGmailScope(account?.scope) && hasAccessToken);
   const googleConnected = !!account;
   const needsReconnect = googleConnected && !gmailConnected;
 
@@ -97,8 +100,8 @@ export function GmailStatusCard({
           </div>
 
           <p className="text-[13px] leading-6 text-zinc-500">
-            Phase 3 only stores and verifies OAuth access. It does not fetch or
-            parse emails yet.
+            JobMemo verifies Gmail access server-side before loading recent
+            messages.
           </p>
         </div>
 
