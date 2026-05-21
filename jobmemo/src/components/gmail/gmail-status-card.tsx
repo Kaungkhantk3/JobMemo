@@ -16,7 +16,7 @@ type GmailAccount = {
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
 function hasGmailScope(scope?: string | null) {
-  return !!scope?.split(/\s+/).includes(GMAIL_SCOPE);
+  return !!scope?.includes("gmail.readonly") || !!scope?.includes(GMAIL_SCOPE);
 }
 
 export function GmailStatusCard({

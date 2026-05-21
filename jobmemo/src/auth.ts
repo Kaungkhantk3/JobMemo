@@ -17,6 +17,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             "openid email profile https://www.googleapis.com/auth/gmail.readonly",
           access_type: "offline",
           prompt: "consent",
+          include_granted_scopes: "true",
         },
       },
     }),

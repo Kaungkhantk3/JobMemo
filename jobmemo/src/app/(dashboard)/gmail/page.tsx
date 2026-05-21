@@ -25,9 +25,19 @@ export default async function GmailPage() {
     },
   });
 
-  const hasGmailScope = !!account?.scope?.split(/\s+/).includes(GMAIL_SCOPE);
+  const hasGmailScope =
+    !!account?.scope?.includes("gmail.readonly") ||
+    !!account?.scope?.includes(GMAIL_SCOPE);
   const hasAccessToken = !!account?.access_token;
+  const hasRefreshToken = !!account?.refresh_token;
   const canFetchEmails = hasGmailScope && hasAccessToken;
+
+  console.log("Gmail account debug", {
+    provider: account?.provider,
+    scope: account?.scope ?? "none",
+    hasAccessToken,
+    hasRefreshToken,
+  });
 
   let emails: GmailMessage[] = [];
   let fetchError: string | undefined;
@@ -53,6 +63,34 @@ export default async function GmailPage() {
           hasAccessToken={hasAccessToken}
         />
 
+        {process.env.NODE_ENV !== "production" ? (
+          <section className="overflow-hidden rounded-3xl border border-dashed border-zinc-200/80 bg-white/80 p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                Gmail debug
+              </p>
+              <p className="text-[11px] font-medium text-zinc-500">
+                Development only
+              </p>
+            </div>
+            <div className="mt-3 grid gap-2 text-[13px] text-zinc-700 md:grid-cols-2">
+              <DebugLine label="Provider" value={account?.provider ?? "none"} />
+              <DebugLine
+                label="Scope stored"
+                value={account?.scope ?? "none"}
+              />
+              <DebugLine
+                label="Has access token"
+                value={hasAccessToken ? "yes" : "no"}
+              />
+              <DebugLine
+                label="Has refresh token"
+                value={hasRefreshToken ? "yes" : "no"}
+              />
+            </div>
+          </section>
+        ) : null}
+
         {canFetchEmails ? (
           <GmailEmailList
             emails={emails}
@@ -61,6 +99,17 @@ export default async function GmailPage() {
           />
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function DebugLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50 px-3 py-2.5">
+      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+        {label}
+      </p>
+      <p className="mt-1 break-all text-[13px] text-zinc-700">{value}</p>
     </div>
   );
 }
