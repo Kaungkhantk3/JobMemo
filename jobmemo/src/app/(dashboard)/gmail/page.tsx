@@ -27,11 +27,12 @@ export default async function GmailPage() {
 
   const hasGmailScope = !!account?.scope?.split(/\s+/).includes(GMAIL_SCOPE);
   const hasAccessToken = !!account?.access_token;
+  const canFetchEmails = hasGmailScope && hasAccessToken;
 
   let emails: GmailMessage[] = [];
   let fetchError: string | undefined;
 
-  if (hasGmailScope && hasAccessToken && account?.access_token) {
+  if (canFetchEmails && account?.access_token) {
     try {
       emails = await getRecentJobEmails(account.access_token);
     } catch {
@@ -52,7 +53,7 @@ export default async function GmailPage() {
           hasAccessToken={hasAccessToken}
         />
 
-        {hasAccessToken ? (
+        {canFetchEmails ? (
           <GmailEmailList
             emails={emails}
             syncedAtLabel="just now"
