@@ -18,7 +18,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           access_type: "offline",
           prompt: "consent",
           response_type: "code",
-          include_granted_scopes: "true",
         },
       },
     }),
@@ -29,6 +28,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 
   callbacks: {
+    async jwt({ token, account }) {
+      if (account) {
+        console.log("ACCOUNT_SCOPE:", account.scope);
+        console.log("HAS_ACCESS_TOKEN:", !!account.access_token);
+        console.log("HAS_REFRESH_TOKEN:", !!account.refresh_token);
+
+        const mutableToken = token as typeof token & {
+          accessToken?: string | null;
+          refreshToken?: string | null;
+          scope?: string | null;
+          provider?: string;
+        };
+
+        mutableToken.accessToken = account.access_token ?? null;
+        mutableToken.refreshToken = account.refresh_token ?? null;
+        mutableToken.scope = account.scope ?? null;
+        mutableToken.provider = account.provider;
+      }
+
+      return token;
+    },
     session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
