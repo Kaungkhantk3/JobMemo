@@ -13,13 +13,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
       authorization: {
         params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
           scope:
             "openid email profile https://www.googleapis.com/auth/gmail.readonly",
-          access_type: "offline",
-          prompt: "consent",
-          response_type: "code",
         },
       },
+      checks: ["pkce", "state"],
     }),
   ],
 
@@ -30,9 +31,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
-        console.log("ACCOUNT_SCOPE:", account.scope);
-        console.log("HAS_ACCESS_TOKEN:", !!account.access_token);
-        console.log("HAS_REFRESH_TOKEN:", !!account.refresh_token);
+        console.log("JWT_ACCOUNT_SCOPE:", account.scope);
+        console.log("JWT_HAS_ACCESS:", !!account.access_token);
+        console.log("JWT_HAS_REFRESH:", !!account.refresh_token);
 
         const mutableToken = token as typeof token & {
           accessToken?: string | null;
@@ -55,6 +56,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       return session;
+    },
+  },
+
+  events: {
+    async linkAccount(message) {
+      console.log("LINK_ACCOUNT", {
+        provider: message.account?.provider,
+        scope: message.account?.scope,
+        hasAccessToken: !!message.account?.access_token,
+        hasRefreshToken: !!message.account?.refresh_token,
+      });
     },
   },
 
