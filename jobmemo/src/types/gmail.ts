@@ -39,4 +39,7 @@ export interface GmailMessage {
   company?: string | null;
   role?: string | null;
   applicationState?: "APPLIED" | "SENT";
+  hidden?: boolean;
+  userCorrectedStatus?: GmailJobStatus | null;
+  reviewed?: boolean;
 }

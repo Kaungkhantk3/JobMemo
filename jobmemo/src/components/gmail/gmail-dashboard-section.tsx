@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ComponentType } from "react";
+import { toast } from "sonner";
 import {
   Inbox,
   Sparkles,
@@ -9,6 +10,7 @@ import {
   BadgeCheck,
   BadgeAlert,
   BriefcaseBusiness,
+  SearchX,
 } from "lucide-react";
 
 import type {
@@ -19,13 +21,17 @@ import type {
 
 import { GmailEmailList } from "./gmail-email-list";
 import {
+  filterHiddenEmails,
+  filterNeedsReviewEmails,
   filterRelevantEmails,
   getMailboxCountLabel,
+  getResolvedEmailStatus,
 } from "./gmail-display-utils";
 
 type EmailReview = {
   hidden?: boolean;
-  status?: GmailJobStatus;
+  reviewed?: boolean;
+  userCorrectedStatus?: GmailJobStatus | null;
 };
 
 function StatCard({
@@ -104,6 +110,29 @@ function descriptionForMailbox(mailbox: GmailMailboxKind) {
     : "Received recruiter replies, interview invites, assessments, rejections, and offers.";
 }
 
+function buildReviewMap(emails: GmailMessage[]) {
+  return Object.fromEntries(
+    emails.map((email) => [
+      email.id,
+      {
+        hidden: email.hidden,
+        reviewed: email.reviewed,
+        userCorrectedStatus: email.userCorrectedStatus ?? null,
+      } satisfies EmailReview,
+    ]),
+  ) as Record<string, EmailReview>;
+}
+
+function applyReview(email: GmailMessage, review?: EmailReview) {
+  return {
+    ...email,
+    hidden: review?.hidden ?? email.hidden ?? false,
+    reviewed: review?.reviewed ?? email.reviewed ?? false,
+    userCorrectedStatus:
+      review?.userCorrectedStatus ?? email.userCorrectedStatus ?? null,
+  } satisfies GmailMessage;
+}
+
 export function GmailDashboardSection({
   inboxEmails,
   sentEmails,
@@ -119,75 +148,133 @@ export function GmailDashboardSection({
 }) {
   const [activeMailbox, setActiveMailbox] =
     useState<GmailMailboxKind>("INBOX_ACTIVITY");
-  const [showDebugEmails, setShowDebugEmails] = useState(false);
+  const [showHiddenEmails, setShowHiddenEmails] = useState(false);
   const [emailReviews, setEmailReviews] = useState<Record<string, EmailReview>>(
-    {},
+    () => buildReviewMap([...inboxEmails, ...sentEmails]),
+  );
+
+  const reviewedInboxEmails = inboxEmails.map((email) =>
+    applyReview(email, emailReviews[email.id]),
+  );
+  const reviewedSentEmails = sentEmails.map((email) =>
+    applyReview(email, emailReviews[email.id]),
   );
 
   const activeEmails =
-    activeMailbox === "APPLICATIONS_SENT" ? sentEmails : inboxEmails;
+    activeMailbox === "APPLICATIONS_SENT"
+      ? reviewedSentEmails
+      : reviewedInboxEmails;
   const activeError =
     activeMailbox === "APPLICATIONS_SENT" ? sentError : inboxError;
-  const reviewedActiveEmails = activeEmails
-    .filter((email) => !emailReviews[email.id]?.hidden)
-    .map((email) => {
-      const review = emailReviews[email.id];
 
-      if (!review?.status) {
-        return email;
-      }
-
-      return {
-        ...email,
-        status: review.status,
-        applicationState: undefined,
-      };
-    });
-
-  const relevantReviewedEmails = filterRelevantEmails(reviewedActiveEmails);
+  const activeRelevantEmails = filterRelevantEmails(activeEmails);
+  const activeNeedsReviewEmails = filterNeedsReviewEmails(activeEmails);
+  const activeHiddenEmails = filterHiddenEmails(activeEmails);
 
   const activeStats = {
-    relevantEmails: relevantReviewedEmails.length,
-    applications: relevantReviewedEmails.filter((email) => {
-      const resolvedStatus = email.applicationState ?? email.status;
+    relevantEmails: activeRelevantEmails.length,
+    applications: activeRelevantEmails.filter((email) => {
+      const resolvedStatus = getResolvedEmailStatus(email);
 
       return resolvedStatus === "APPLIED" || resolvedStatus === "SENT";
     }).length,
-    interviewsAssessments: relevantReviewedEmails.filter((email) => {
-      const resolvedStatus = email.applicationState ?? email.status;
-
-      return resolvedStatus === "INTERVIEW" || resolvedStatus === "ASSESSMENT";
-    }).length,
-    offersRejections: relevantReviewedEmails.filter((email) => {
-      const resolvedStatus = email.applicationState ?? email.status;
-
-      return resolvedStatus === "OFFER" || resolvedStatus === "REJECTION";
-    }).length,
+    needsReview: activeNeedsReviewEmails.length,
+    hidden: activeHiddenEmails.length,
   };
 
-  const visibleEmails = showDebugEmails
-    ? reviewedActiveEmails
-    : relevantReviewedEmails;
+  async function patchReview(
+    emailId: string,
+    payload: {
+      hidden?: boolean;
+      reviewed?: boolean;
+      userCorrectedStatus?: GmailJobStatus | null;
+    },
+    optimisticReview: EmailReview,
+    successMessage: string,
+  ) {
+    const previousReview = emailReviews[emailId];
 
-  function hideEmail(emailId: string) {
     setEmailReviews((current) => ({
       ...current,
       [emailId]: {
         ...current[emailId],
-        hidden: true,
+        ...optimisticReview,
       },
     }));
+
+    try {
+      const response = await fetch(`/api/gmail/email/${emailId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = (await response.json().catch(() => null)) as {
+        review?: EmailReview;
+        error?: string;
+      } | null;
+
+      if (!response.ok) {
+        throw new Error(result?.error || "Failed to update Gmail review");
+      }
+
+      setEmailReviews((current) => ({
+        ...current,
+        [emailId]: {
+          ...current[emailId],
+          ...(result?.review ?? payload),
+        },
+      }));
+
+      toast.success(successMessage);
+    } catch (error) {
+      setEmailReviews((current) => {
+        if (previousReview) {
+          return {
+            ...current,
+            [emailId]: previousReview,
+          };
+        }
+
+        const rest = { ...current };
+        delete rest[emailId];
+        return rest;
+      });
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update Gmail review",
+      );
+    }
+  }
+
+  function hideEmail(emailId: string) {
+    return patchReview(
+      emailId,
+      { hidden: true, reviewed: true },
+      { hidden: true, reviewed: true },
+      "Email hidden",
+    );
   }
 
   function updateEmailStatus(emailId: string, status: GmailJobStatus) {
-    setEmailReviews((current) => ({
-      ...current,
-      [emailId]: {
-        ...current[emailId],
-        status,
+    return patchReview(
+      emailId,
+      {
         hidden: false,
+        reviewed: true,
+        userCorrectedStatus: status,
       },
-    }));
+      {
+        hidden: false,
+        reviewed: true,
+        userCorrectedStatus: status,
+      },
+      "Classification corrected",
+    );
   }
 
   return (
@@ -222,22 +309,25 @@ export function GmailDashboardSection({
             <Inbox className="h-3.5 w-3.5" />
             {getMailboxCountLabel(
               "INBOX_ACTIVITY",
-              filterRelevantEmails(inboxEmails).length,
+              filterRelevantEmails(reviewedInboxEmails).length,
             )}
           </span>
           <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
             <Send className="h-3.5 w-3.5" />
             {getMailboxCountLabel(
               "APPLICATIONS_SENT",
-              filterRelevantEmails(sentEmails).length,
+              filterRelevantEmails(reviewedSentEmails).length,
             )}
           </span>
           <button
             type="button"
-            onClick={() => setShowDebugEmails((s) => !s)}
-            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[12px] font-medium ${showDebugEmails ? "border-amber-400 bg-amber-50 text-amber-800" : "border-zinc-200 bg-white text-zinc-600"}`}
+            onClick={() => setShowHiddenEmails((current) => !current)}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[12px] font-medium ${showHiddenEmails ? "border-amber-400 bg-amber-50 text-amber-800" : "border-zinc-200 bg-white text-zinc-600"}`}
           >
-            Show debug emails
+            Show hidden emails
+            <span className="rounded-full bg-white/60 px-2 py-0.5 text-[11px] text-inherit">
+              {activeHiddenEmails.length}
+            </span>
           </button>
         </div>
       </div>
@@ -246,14 +336,14 @@ export function GmailDashboardSection({
         <div className="flex flex-wrap gap-2">
           <TabButton
             active={activeMailbox === "INBOX_ACTIVITY"}
-            count={filterRelevantEmails(inboxEmails).length}
+            count={filterRelevantEmails(reviewedInboxEmails).length}
             label="Inbox replies"
             icon={Inbox}
             onClick={() => setActiveMailbox("INBOX_ACTIVITY")}
           />
           <TabButton
             active={activeMailbox === "APPLICATIONS_SENT"}
-            count={filterRelevantEmails(sentEmails).length}
+            count={filterRelevantEmails(reviewedSentEmails).length}
             label="Sent applications"
             icon={Send}
             onClick={() => setActiveMailbox("APPLICATIONS_SENT")}
@@ -274,21 +364,21 @@ export function GmailDashboardSection({
             icon={BadgeCheck}
           />
           <StatCard
-            label="Interviews/Assessments"
-            value={activeStats.interviewsAssessments}
-            icon={Sparkles}
+            label="Needs review"
+            value={activeStats.needsReview}
+            icon={SearchX}
           />
           <StatCard
-            label="Offers/Rejections"
-            value={activeStats.offersRejections}
+            label="Hidden"
+            value={activeStats.hidden}
             icon={BadgeAlert}
           />
         </div>
 
-        <div className="mt-5">
+        <div className="mt-5 space-y-5">
           <GmailEmailList
-            key={`${activeMailbox}-${showDebugEmails ? "debug" : "clean"}`}
-            emails={visibleEmails}
+            key={`${activeMailbox}-main`}
+            emails={activeRelevantEmails}
             title={titleForMailbox(activeMailbox)}
             description={descriptionForMailbox(activeMailbox)}
             mailboxLabel={
@@ -298,9 +388,88 @@ export function GmailDashboardSection({
             }
             syncedAtLabel={syncedAtLabel}
             errorMessage={activeError}
+            emptyTitle="No relevant emails yet"
+            emptyDescription="JobMemo is waiting for job-related Gmail activity that matches your current mailbox."
             onHideEmail={hideEmail}
             onChangeStatus={updateEmailStatus}
           />
+
+          <section className="rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
+            <div className="border-b border-zinc-200/80 px-5 py-4 md:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                    Needs review
+                  </p>
+                  <h2 className="mt-2 text-[18px] font-semibold text-zinc-950">
+                    Emails that need your confirmation
+                  </h2>
+                  <p className="mt-1 text-[13px] leading-6 text-zinc-600">
+                    Low-confidence matches, incomplete metadata, or unclear
+                    classifications are parked here for manual correction.
+                  </p>
+                </div>
+                <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
+                  {activeNeedsReviewEmails.length}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-5 md:p-6">
+              <GmailEmailList
+                key={`${activeMailbox}-review`}
+                emails={activeNeedsReviewEmails}
+                title="Needs review"
+                description="Confirm the right status or hide anything that is not job-related."
+                mailboxLabel="Needs review"
+                syncedAtLabel={syncedAtLabel}
+                emptyTitle="No emails need review"
+                emptyDescription="Every visible email in this mailbox has enough confidence and metadata to stay in the main list."
+                onHideEmail={hideEmail}
+                onChangeStatus={updateEmailStatus}
+              />
+            </div>
+          </section>
+
+          {showHiddenEmails ? (
+            <section className="rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
+              <div className="border-b border-zinc-200/80 px-5 py-4 md:px-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                      Hidden emails
+                    </p>
+                    <h2 className="mt-2 text-[18px] font-semibold text-zinc-950">
+                      Hidden emails debug section
+                    </h2>
+                    <p className="mt-1 text-[13px] leading-6 text-zinc-600">
+                      These emails were hidden from the default view after
+                      manual review.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
+                    {activeHiddenEmails.length}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-5 md:p-6">
+                <GmailEmailList
+                  key={`${activeMailbox}-hidden`}
+                  emails={activeHiddenEmails}
+                  title="Hidden emails"
+                  description="Debug-only view of emails you chose to hide from the main inbox review flow."
+                  mailboxLabel="Hidden emails"
+                  syncedAtLabel={syncedAtLabel}
+                  emptyTitle="No hidden emails"
+                  emptyDescription="Hidden emails will appear here after you choose to hide them from the main view."
+                  onHideEmail={hideEmail}
+                  onChangeStatus={updateEmailStatus}
+                  actionsEnabled={false}
+                />
+              </div>
+            </section>
+          ) : null}
         </div>
       </div>
     </section>

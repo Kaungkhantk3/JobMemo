@@ -58,7 +58,45 @@ export function getStrongPhraseMatch(email: GmailMessage) {
   };
 }
 
+export function getResolvedEmailStatus(email: GmailMessage) {
+  return email.userCorrectedStatus ?? email.applicationState ?? email.status;
+}
+
+export function isHiddenEmail(email: GmailMessage) {
+  return email.hidden === true;
+}
+
+export function isNeedsReviewEmail(email: GmailMessage) {
+  if (isHiddenEmail(email)) {
+    return false;
+  }
+
+  const resolvedStatus = getResolvedEmailStatus(email);
+
+  if (resolvedStatus === "UNKNOWN") {
+    return true;
+  }
+
+  if (email.confidenceBand === "low") {
+    return true;
+  }
+
+  if (!email.company || !email.role) {
+    return true;
+  }
+
+  return !getStrongPhraseMatch(email).matched;
+}
+
 export function isRelevantEmail(email: GmailMessage) {
+  if (isHiddenEmail(email)) {
+    return false;
+  }
+
+  if (isNeedsReviewEmail(email)) {
+    return false;
+  }
+
   if (email.category === "UNKNOWN") {
     return false;
   }
@@ -74,19 +112,27 @@ export function filterRelevantEmails(emails: GmailMessage[]) {
   return emails.filter(isRelevantEmail);
 }
 
+export function filterNeedsReviewEmails(emails: GmailMessage[]) {
+  return emails.filter(isNeedsReviewEmail);
+}
+
+export function filterHiddenEmails(emails: GmailMessage[]) {
+  return emails.filter(isHiddenEmail);
+}
+
 export function buildGmailDashboardStats(emails: GmailMessage[]) {
   const relevantEmails = filterRelevantEmails(emails);
 
   const interviews = relevantEmails.filter(
-    (email) => (email.applicationState ?? email.status) === "INTERVIEW",
+    (email) => getResolvedEmailStatus(email) === "INTERVIEW",
   ).length;
 
   const assessments = relevantEmails.filter(
-    (email) => (email.applicationState ?? email.status) === "ASSESSMENT",
+    (email) => getResolvedEmailStatus(email) === "ASSESSMENT",
   ).length;
 
   const offersRejections = relevantEmails.filter((email) => {
-    const status = email.applicationState ?? email.status;
+    const status = getResolvedEmailStatus(email);
 
     return status === "OFFER" || status === "REJECTION";
   }).length;

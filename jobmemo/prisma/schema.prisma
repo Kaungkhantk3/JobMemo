@@ -45,9 +45,29 @@ model User {
   applications Application[]
   accounts Account[]
   sessions Session[]
+  gmailEmailReviews GmailEmailReview[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model GmailEmailReview {
+  id String @id @default(cuid())
+
+  userId String
+  gmailMessageId String
+  hidden Boolean @default(false)
+  userCorrectedStatus String?
+  reviewed Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, gmailMessageId])
+  @@index([userId, hidden])
+  @@index([userId, reviewed])
 }
 
 model Account {

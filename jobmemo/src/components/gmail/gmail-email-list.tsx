@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Inbox,
   Mail,
+  MoreHorizontal,
   RefreshCcw,
   SearchX,
   Sparkles,
@@ -13,6 +14,10 @@ import {
 import type { GmailJobStatus, GmailMessage } from "@/types/gmail";
 
 import { ConnectGmailButton } from "./connect-gmail-button";
+import {
+  getResolvedEmailStatus,
+  isNeedsReviewEmail,
+} from "./gmail-display-utils";
 
 function formatEmailDate(dateString: string) {
   const date = new Date(dateString);
@@ -48,7 +53,7 @@ function statusLabel(
     case "RECRUITER":
       return "Recruiter";
     case "UNKNOWN":
-      return "Unknown";
+      return "Needs review";
     default:
       return null;
   }
@@ -60,7 +65,6 @@ const MANUAL_STATUS_OPTIONS: Array<{ value: GmailJobStatus; label: string }> = [
   { value: "ASSESSMENT", label: "Assessment" },
   { value: "OFFER", label: "Offer" },
   { value: "REJECTION", label: "Rejected" },
-  { value: "RECRUITER", label: "Recruiter" },
 ];
 
 export function GmailEmailList({
@@ -74,6 +78,7 @@ export function GmailEmailList({
   emptyDescription = "JobMemo checks the latest inbox and sent mail for relevant job activity.",
   onHideEmail,
   onChangeStatus,
+  actionsEnabled = true,
 }: {
   emails: GmailMessage[];
   title: string;
@@ -85,6 +90,7 @@ export function GmailEmailList({
   emptyDescription?: string;
   onHideEmail: (emailId: string) => void;
   onChangeStatus: (emailId: string, status: GmailJobStatus) => void;
+  actionsEnabled?: boolean;
 }) {
   const [visibleCount, setVisibleCount] = useState(5);
   const [activeActionId, setActiveActionId] = useState<string | null>(null);
@@ -219,7 +225,10 @@ export function GmailEmailList({
       <div className="border-t border-zinc-100">
         <div className="max-h-[520px] divide-y divide-zinc-100 overflow-y-auto">
           {visibleEmails.map((email) => {
-            const resolvedStatus = email.applicationState ?? email.status;
+            const resolvedStatus = getResolvedEmailStatus(email);
+            const badgeLabel = isNeedsReviewEmail(email)
+              ? "Needs review"
+              : statusLabel(resolvedStatus);
 
             return (
               <article
@@ -229,9 +238,9 @@ export function GmailEmailList({
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      {statusLabel(resolvedStatus) ? (
+                      {badgeLabel ? (
                         <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-700">
-                          {statusLabel(resolvedStatus)}
+                          {badgeLabel}
                         </span>
                       ) : null}
                       <p className="text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
@@ -253,25 +262,28 @@ export function GmailEmailList({
                     <span className="text-[12px] text-zinc-500">
                       {formatEmailDate(email.date)}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActiveActionId((current) =>
-                          current === email.id ? null : email.id,
-                        )
-                      }
-                      className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
-                    >
-                      Mark incorrect
-                    </button>
+                    {actionsEnabled ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveActionId((current) =>
+                            current === email.id ? null : email.id,
+                          )
+                        }
+                        className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+                      >
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                        Review
+                      </button>
+                    ) : null}
                   </div>
                 </div>
 
-                {activeActionId === email.id ? (
+                {actionsEnabled && activeActionId === email.id ? (
                   <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
-                        Mark incorrect
+                        Review actions
                       </p>
                       <button
                         type="button"
@@ -283,7 +295,7 @@ export function GmailEmailList({
                     </div>
 
                     <p className="mt-2 text-[13px] leading-6 text-zinc-600">
-                      Hide this email or change its status manually.
+                      Hide this email or correct its status.
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
