@@ -37,6 +37,16 @@ export default async function GmailPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-5 space-y-4">
+        <section className="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm md:p-6">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+            Gmail privacy
+          </p>
+          <p className="mt-3 text-[15px] leading-6 text-zinc-600">
+            JobMemo uses read-only Gmail access to detect job application
+            updates. We cannot send, delete, or modify your emails.
+          </p>
+        </section>
+
         <GmailStatusCard
           user={session.user}
           account={account}

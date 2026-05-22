@@ -29,10 +29,21 @@ const EXCLUDED_SUBJECT_PHRASES = [
   "jobs for you",
   "recommended jobs",
   "job alert",
+  "job alerts",
   "new opportunities",
   "top jobs",
   "digest",
   "newsletter",
+  "promotion",
+  "promotions",
+  "course",
+  "courses",
+  "training",
+  "learning",
+  "verification code",
+  "password reset",
+  "security alert",
+  "otp",
 ];
 
 const TRUSTED_RECRUITER_DOMAINS = [
@@ -256,6 +267,31 @@ function hasExcludedSubject(subject: string) {
   );
 }
 
+function hasExcludedContent(subject: string, from: string, snippet: string) {
+  const combinedText = normalizeText(subject, from, snippet).toLowerCase();
+
+  return [
+    "newsletter",
+    "digest",
+    "promotion",
+    "promotions",
+    "job alert",
+    "job alerts",
+    "course",
+    "courses",
+    "training",
+    "learning",
+    "verification code",
+    "password reset",
+    "security alert",
+    "otp",
+    "bank",
+    "payment",
+    "invoice",
+    "credit card",
+  ].some((phrase) => combinedText.includes(phrase));
+}
+
 function hasExcludedSender(from: string) {
   const fromLower = from.toLowerCase();
   const domain = getSenderDomain(from);
@@ -357,6 +393,16 @@ export function classifyJobEmail(email: {
       confidenceBand: "low" as const,
       matchedKeywords: [] as string[],
       reason: "Filtered as noisy or non-job mail",
+    };
+  }
+
+  if (hasExcludedContent(subject, from, snippet)) {
+    return {
+      status: "UNKNOWN" as const,
+      confidence: 0,
+      confidenceBand: "low" as const,
+      matchedKeywords: [] as string[],
+      reason: "Filtered as non-job or sensitive mail",
     };
   }
 

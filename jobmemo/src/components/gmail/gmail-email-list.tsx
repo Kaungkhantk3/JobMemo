@@ -10,10 +10,9 @@ import {
   TimerReset,
 } from "lucide-react";
 
-import type { GmailMessage } from "@/types/gmail";
+import type { GmailJobStatus, GmailMessage } from "@/types/gmail";
 
 import { ConnectGmailButton } from "./connect-gmail-button";
-import { filterRelevantEmails } from "./gmail-display-utils";
 
 function formatEmailDate(dateString: string) {
   const date = new Date(dateString);
@@ -28,10 +27,6 @@ function formatEmailDate(dateString: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
-}
-
-function confidenceLabel(confidence: number) {
-  return `${Math.round(confidence * 100)}% confidence`;
 }
 
 function statusLabel(
@@ -59,6 +54,15 @@ function statusLabel(
   }
 }
 
+const MANUAL_STATUS_OPTIONS: Array<{ value: GmailJobStatus; label: string }> = [
+  { value: "APPLIED", label: "Applied" },
+  { value: "INTERVIEW", label: "Interview" },
+  { value: "ASSESSMENT", label: "Assessment" },
+  { value: "OFFER", label: "Offer" },
+  { value: "REJECTION", label: "Rejected" },
+  { value: "RECRUITER", label: "Recruiter" },
+];
+
 export function GmailEmailList({
   emails,
   title,
@@ -68,7 +72,8 @@ export function GmailEmailList({
   errorMessage,
   emptyTitle = "No matching Gmail messages yet",
   emptyDescription = "JobMemo checks the latest inbox and sent mail for relevant job activity.",
-  showDebugEmails = false,
+  onHideEmail,
+  onChangeStatus,
 }: {
   emails: GmailMessage[];
   title: string;
@@ -78,15 +83,15 @@ export function GmailEmailList({
   errorMessage?: string;
   emptyTitle?: string;
   emptyDescription?: string;
-  showDebugEmails?: boolean;
+  onHideEmail: (emailId: string) => void;
+  onChangeStatus: (emailId: string, status: GmailJobStatus) => void;
 }) {
   const [visibleCount, setVisibleCount] = useState(5);
+  const [activeActionId, setActiveActionId] = useState<string | null>(null);
 
-  const filteredEmails = showDebugEmails
-    ? emails
-    : filterRelevantEmails(emails);
-  const visibleEmails = filteredEmails.slice(0, visibleCount);
-  const hasMoreEmails = visibleCount < filteredEmails.length;
+  const visibleEmails = emails.slice(0, visibleCount);
+  const hasMoreEmails = visibleCount < emails.length;
+
   if (errorMessage) {
     return (
       <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
@@ -128,7 +133,7 @@ export function GmailEmailList({
     );
   }
 
-  if (filteredEmails.length === 0) {
+  if (emails.length === 0) {
     return (
       <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
         <div className="border-b border-zinc-200/80 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
@@ -206,7 +211,7 @@ export function GmailEmailList({
           </span>
           <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
             <Inbox className="h-3.5 w-3.5" />
-            {filteredEmails.length} relevant job emails
+            {emails.length} relevant job emails
           </span>
         </div>
       </div>
@@ -214,6 +219,8 @@ export function GmailEmailList({
       <div className="border-t border-zinc-100">
         <div className="max-h-[520px] divide-y divide-zinc-100 overflow-y-auto">
           {visibleEmails.map((email) => {
+            const resolvedStatus = email.applicationState ?? email.status;
+
             return (
               <article
                 key={email.id}
@@ -221,42 +228,90 @@ export function GmailEmailList({
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {statusLabel(resolvedStatus) ? (
+                        <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-700">
+                          {statusLabel(resolvedStatus)}
+                        </span>
+                      ) : null}
+                      <p className="text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
+                        {email.company ?? "Unknown company"}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-[14px] font-medium text-zinc-700">
+                      {email.role ?? "Role not detected"}
+                    </p>
+                    <p className="mt-2 text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
                       {email.subject ?? "(No subject)"}
                     </p>
                     <p className="mt-2 text-[13px] text-zinc-700 line-clamp-2">
                       {email.snippet ?? ""}
                     </p>
-                    <div className="mt-2 flex items-center gap-3">
-                      {statusLabel(email.applicationState ?? email.status) ? (
-                        <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-700">
-                          {statusLabel(email.applicationState ?? email.status)}
-                        </span>
-                      ) : null}
-                      <div className="text-[13px] text-zinc-700">
-                        <div className="font-medium">
-                          {email.company ?? "Unknown company"}
-                        </div>
-                        <div className="text-[13px]">
-                          {email.role ?? "Role not detected"}
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
-                  <span className="shrink-0 text-[12px] text-zinc-500">
-                    {formatEmailDate(email.date)}
-                  </span>
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <span className="text-[12px] text-zinc-500">
+                      {formatEmailDate(email.date)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveActionId((current) =>
+                          current === email.id ? null : email.id,
+                        )
+                      }
+                      className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+                    >
+                      Mark incorrect
+                    </button>
+                  </div>
                 </div>
-                {showDebugEmails ? (
-                  <div className="mt-2 text-[12px] text-zinc-500">
-                    <div>
-                      Matched keywords:{" "}
-                      {email.matchedKeywords.join(", ") || "-"}
+
+                {activeActionId === email.id ? (
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                        Mark incorrect
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveActionId(null)}
+                        className="text-[12px] font-medium text-zinc-500 hover:text-zinc-900"
+                      >
+                        Close
+                      </button>
                     </div>
-                    <div>Sender domain: {email.senderDomain || "-"}</div>
-                    <div>Why: {email.reason || "-"}</div>
-                    <div>Confidence: {confidenceLabel(email.confidence)}</div>
+
+                    <p className="mt-2 text-[13px] leading-6 text-zinc-600">
+                      Hide this email or change its status manually.
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onHideEmail(email.id);
+                          setActiveActionId(null);
+                        }}
+                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[12px] font-medium text-rose-700 hover:bg-rose-100"
+                      >
+                        Hide this email
+                      </button>
+
+                      {MANUAL_STATUS_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            onChangeStatus(email.id, option.value);
+                            setActiveActionId(null);
+                          }}
+                          className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : null}
               </article>
@@ -266,7 +321,7 @@ export function GmailEmailList({
 
         <div className="flex items-center justify-between gap-3 border-t border-zinc-100 px-5 py-4 md:px-6">
           <p className="text-[12px] text-zinc-500">
-            Showing {visibleEmails.length} of {filteredEmails.length}
+            Showing {visibleEmails.length} of {emails.length}
           </p>
 
           {hasMoreEmails ? (

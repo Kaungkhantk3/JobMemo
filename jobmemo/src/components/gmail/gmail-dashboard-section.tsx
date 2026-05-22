@@ -7,18 +7,26 @@ import {
   TrendingUp,
   Send,
   BadgeCheck,
+  BadgeAlert,
   BriefcaseBusiness,
-  Rocket,
 } from "lucide-react";
 
-import type { GmailMailboxKind, GmailMessage } from "@/types/gmail";
+import type {
+  GmailJobStatus,
+  GmailMailboxKind,
+  GmailMessage,
+} from "@/types/gmail";
 
 import { GmailEmailList } from "./gmail-email-list";
 import {
-  buildGmailDashboardStats,
   filterRelevantEmails,
   getMailboxCountLabel,
 } from "./gmail-display-utils";
+
+type EmailReview = {
+  hidden?: boolean;
+  status?: GmailJobStatus;
+};
 
 function StatCard({
   label,
@@ -112,15 +120,75 @@ export function GmailDashboardSection({
   const [activeMailbox, setActiveMailbox] =
     useState<GmailMailboxKind>("INBOX_ACTIVITY");
   const [showDebugEmails, setShowDebugEmails] = useState(false);
+  const [emailReviews, setEmailReviews] = useState<Record<string, EmailReview>>(
+    {},
+  );
 
   const activeEmails =
     activeMailbox === "APPLICATIONS_SENT" ? sentEmails : inboxEmails;
   const activeError =
     activeMailbox === "APPLICATIONS_SENT" ? sentError : inboxError;
+  const reviewedActiveEmails = activeEmails
+    .filter((email) => !emailReviews[email.id]?.hidden)
+    .map((email) => {
+      const review = emailReviews[email.id];
+
+      if (!review?.status) {
+        return email;
+      }
+
+      return {
+        ...email,
+        status: review.status,
+        applicationState: undefined,
+      };
+    });
+
+  const relevantReviewedEmails = filterRelevantEmails(reviewedActiveEmails);
+
+  const activeStats = {
+    relevantEmails: relevantReviewedEmails.length,
+    applications: relevantReviewedEmails.filter((email) => {
+      const resolvedStatus = email.applicationState ?? email.status;
+
+      return resolvedStatus === "APPLIED" || resolvedStatus === "SENT";
+    }).length,
+    interviewsAssessments: relevantReviewedEmails.filter((email) => {
+      const resolvedStatus = email.applicationState ?? email.status;
+
+      return resolvedStatus === "INTERVIEW" || resolvedStatus === "ASSESSMENT";
+    }).length,
+    offersRejections: relevantReviewedEmails.filter((email) => {
+      const resolvedStatus = email.applicationState ?? email.status;
+
+      return resolvedStatus === "OFFER" || resolvedStatus === "REJECTION";
+    }).length,
+  };
+
   const visibleEmails = showDebugEmails
-    ? activeEmails
-    : filterRelevantEmails(activeEmails);
-  const activeStats = buildGmailDashboardStats(activeEmails);
+    ? reviewedActiveEmails
+    : relevantReviewedEmails;
+
+  function hideEmail(emailId: string) {
+    setEmailReviews((current) => ({
+      ...current,
+      [emailId]: {
+        ...current[emailId],
+        hidden: true,
+      },
+    }));
+  }
+
+  function updateEmailStatus(emailId: string, status: GmailJobStatus) {
+    setEmailReviews((current) => ({
+      ...current,
+      [emailId]: {
+        ...current[emailId],
+        status,
+        hidden: false,
+      },
+    }));
+  }
 
   return (
     <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
@@ -196,24 +264,24 @@ export function GmailDashboardSection({
       <div className="p-5 md:p-6">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Total relevant"
-            value={activeStats.totalRelevant}
+            label="Relevant emails"
+            value={activeStats.relevantEmails}
             icon={BriefcaseBusiness}
           />
           <StatCard
-            label="Interviews"
-            value={activeStats.interviews}
+            label="Applications"
+            value={activeStats.applications}
             icon={BadgeCheck}
           />
           <StatCard
-            label="Assessments"
-            value={activeStats.assessments}
+            label="Interviews/Assessments"
+            value={activeStats.interviewsAssessments}
             icon={Sparkles}
           />
           <StatCard
             label="Offers/Rejections"
             value={activeStats.offersRejections}
-            icon={Rocket}
+            icon={BadgeAlert}
           />
         </div>
 
@@ -230,7 +298,8 @@ export function GmailDashboardSection({
             }
             syncedAtLabel={syncedAtLabel}
             errorMessage={activeError}
-            showDebugEmails={showDebugEmails}
+            onHideEmail={hideEmail}
+            onChangeStatus={updateEmailStatus}
           />
         </div>
       </div>
