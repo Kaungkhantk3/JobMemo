@@ -1,17 +1,10 @@
 import {
-  BadgeAlert,
-  BadgeCheck,
-  BriefcaseBusiness,
   Inbox,
   Mail,
   RefreshCcw,
   SearchX,
   Sparkles,
   TimerReset,
-  Clock3,
-  MessageSquareWarning,
-  Rocket,
-  BadgeHelp,
 } from "lucide-react";
 
 import type { GmailMessage } from "@/types/gmail";
@@ -35,70 +28,6 @@ function formatEmailDate(dateString: string) {
 
 function confidenceLabel(confidence: number) {
   return `${Math.round(confidence * 100)}% confidence`;
-}
-
-function confidenceBadgeClass(band: GmailMessage["confidenceBand"]) {
-  switch (band) {
-    case "high":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "medium":
-      return "bg-amber-50 text-amber-800 border-amber-200";
-    default:
-      return "bg-zinc-100 text-zinc-700 border-zinc-200";
-  }
-}
-
-function confidenceBadgeLabel(band: GmailMessage["confidenceBand"]) {
-  switch (band) {
-    case "high":
-      return "High confidence";
-    case "medium":
-      return "Medium confidence";
-    default:
-      return "Low confidence";
-  }
-}
-
-function categoryMeta(category: GmailMessage["category"]) {
-  const base = {
-    APPLIED: {
-      label: "Application",
-      icon: BriefcaseBusiness,
-      className: "bg-slate-100 text-slate-700 border-slate-200",
-    },
-    INTERVIEW: {
-      label: "Interview",
-      icon: Clock3,
-      className: "bg-blue-50 text-blue-700 border-blue-200",
-    },
-    ASSESSMENT: {
-      label: "Assessment",
-      icon: BadgeCheck,
-      className: "bg-violet-50 text-violet-700 border-violet-200",
-    },
-    OFFER: {
-      label: "Offer",
-      icon: Rocket,
-      className: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    },
-    REJECTION: {
-      label: "Rejected",
-      icon: BadgeAlert,
-      className: "bg-rose-50 text-rose-700 border-rose-200",
-    },
-    RECRUITER: {
-      label: "Recruiter",
-      icon: MessageSquareWarning,
-      className: "bg-amber-50 text-amber-800 border-amber-200",
-    },
-    UNKNOWN: {
-      label: "Unknown",
-      icon: BadgeHelp,
-      className: "bg-zinc-100 text-zinc-700 border-zinc-200",
-    },
-  } as const;
-
-  return base[category];
 }
 
 function statusLabel(
@@ -126,31 +55,6 @@ function statusLabel(
   }
 }
 
-function KeywordChip({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-600 shadow-sm">
-      {label}
-    </span>
-  );
-}
-
-function ConfidenceBadge({
-  band,
-  confidence,
-}: {
-  band: GmailMessage["confidenceBand"];
-  confidence: number;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${confidenceBadgeClass(band)}`}
-      title={confidenceLabel(confidence)}
-    >
-      {confidenceBadgeLabel(band)}
-    </span>
-  );
-}
-
 export function GmailEmailList({
   emails,
   title,
@@ -160,6 +64,7 @@ export function GmailEmailList({
   errorMessage,
   emptyTitle = "No matching Gmail messages yet",
   emptyDescription = "JobMemo checks the latest inbox and sent mail for relevant job activity.",
+  developerMode = false,
 }: {
   emails: GmailMessage[];
   title: string;
@@ -169,7 +74,63 @@ export function GmailEmailList({
   errorMessage?: string;
   emptyTitle?: string;
   emptyDescription?: string;
+  developerMode?: boolean;
 }) {
+  const strongPhrases: Record<string, string[]> = {
+    APPLIED: [
+      "thank you for your application",
+      "we received your application",
+      "application received",
+      "your application for",
+      "currently reviewing your application",
+    ],
+    INTERVIEW: [
+      "interview",
+      "schedule a call",
+      "availability",
+      "meet with",
+      "next stage",
+    ],
+    ASSESSMENT: [
+      "assessment",
+      "coding challenge",
+      "online test",
+      "technical test",
+      "answer a few questions",
+    ],
+    REJECTION: [
+      "unfortunately",
+      "not selected",
+      "regret to inform",
+      "moved forward with other candidates",
+    ],
+    OFFER: [
+      "offer letter",
+      "pleased to offer",
+      "job offer",
+      "compensation package",
+    ],
+  };
+
+  function matchesStrongPhrases(email: GmailMessage) {
+    const text = `${email.subject ?? ""} ${email.snippet ?? ""}`.toLowerCase();
+    for (const phrases of Object.values(strongPhrases)) {
+      for (const p of phrases) {
+        if (text.includes(p)) return true;
+      }
+    }
+    return false;
+  }
+
+  const filteredEmails = emails.filter((email) => {
+    // hide UNKNOWN by default
+    if (email.category === "UNKNOWN") return false;
+    // hide low-confidence by default
+    if (email.confidenceBand === "low") return false;
+    // require strong phrase match
+    if (!matchesStrongPhrases(email)) return false;
+    return true;
+  });
   if (errorMessage) {
     return (
       <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
@@ -211,7 +172,7 @@ export function GmailEmailList({
     );
   }
 
-  if (emails.length === 0) {
+  if (filteredEmails.length === 0) {
     return (
       <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
         <div className="border-b border-zinc-200/80 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
@@ -289,16 +250,13 @@ export function GmailEmailList({
           </span>
           <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
             <Inbox className="h-3.5 w-3.5" />
-            {emails.length} recent emails
+            {filteredEmails.length} relevant job emails
           </span>
         </div>
       </div>
 
       <div className="max-h-[72vh] divide-y divide-zinc-100 overflow-y-auto">
-        {emails.map((email) => {
-          const category = categoryMeta(email.category);
-          const CategoryIcon = category.icon;
-
+        {filteredEmails.map((email) => {
           return (
             <article
               key={email.id}
@@ -306,61 +264,43 @@ export function GmailEmailList({
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
-                      {email.company ?? "Unknown company"}
-                    </p>
+                  <p className="text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
+                    {email.subject ?? "(No subject)"}
+                  </p>
+                  <p className="mt-2 text-[13px] text-zinc-700 line-clamp-2">
+                    {email.snippet ?? ""}
+                  </p>
+                  <div className="mt-2 flex items-center gap-3">
                     {statusLabel(email.applicationState ?? email.status) ? (
                       <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-700">
                         {statusLabel(email.applicationState ?? email.status)}
                       </span>
                     ) : null}
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${category.className}`}
-                      title={confidenceLabel(email.confidence)}
-                    >
-                      <CategoryIcon className="h-3.5 w-3.5" />
-                      {category.label}
-                    </span>
-                    <ConfidenceBadge
-                      band={email.confidenceBand}
-                      confidence={email.confidence}
-                    />
+                    <div className="text-[13px] text-zinc-700">
+                      <div className="font-medium">
+                        {email.company ?? "Unknown company"}
+                      </div>
+                      <div className="text-[13px]">
+                        {email.role ?? "Role not detected"}
+                      </div>
+                    </div>
                   </div>
-                  <p className="mt-1 text-[14px] font-medium text-zinc-700">
-                    {email.role ?? "Role not detected"}
-                  </p>
                 </div>
 
                 <span className="shrink-0 text-[12px] text-zinc-500">
                   {formatEmailDate(email.date)}
                 </span>
               </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {email.matchedKeywords.length > 0 ? (
-                  email.matchedKeywords
-                    .slice(0, 4)
-                    .map((keyword) => (
-                      <KeywordChip key={keyword} label={keyword} />
-                    ))
-                ) : (
-                  <KeywordChip label="No strong keyword match" />
-                )}
-              </div>
-
-              <div className="grid gap-2 rounded-2xl border border-zinc-200/80 bg-zinc-50/70 p-3 text-[13px] text-zinc-600 md:grid-cols-2">
-                <p className="wrap-break-word">
-                  <span className="font-medium text-zinc-700">
-                    Sender domain:
-                  </span>{" "}
-                  {email.senderDomain || "unknown"}
-                </p>
-                <p className="wrap-break-word">
-                  <span className="font-medium text-zinc-700">Why:</span>{" "}
-                  {email.reason}
-                </p>
-              </div>
+              {developerMode ? (
+                <div className="mt-2 text-[12px] text-zinc-500">
+                  <div>
+                    Matched keywords: {email.matchedKeywords.join(", ") || "-"}
+                  </div>
+                  <div>Sender domain: {email.senderDomain || "-"}</div>
+                  <div>Why: {email.reason || "-"}</div>
+                  <div>Confidence: {confidenceLabel(email.confidence)}</div>
+                </div>
+              ) : null}
             </article>
           );
         })}

@@ -167,6 +167,7 @@ export function GmailDashboardSection({
   const activeError =
     activeMailbox === "APPLICATIONS_SENT" ? sentError : inboxError;
   const activeStats = buildStats(activeEmails);
+  const [developerMode, setDeveloperMode] = useState(false);
 
   return (
     <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
@@ -204,6 +205,13 @@ export function GmailDashboardSection({
             <Send className="h-3.5 w-3.5" />
             {sentEmails.length} sent applications
           </span>
+          <button
+            type="button"
+            onClick={() => setDeveloperMode((s) => !s)}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[12px] font-medium ${developerMode ? "border-amber-400 bg-amber-50 text-amber-800" : "border-zinc-200 bg-white text-zinc-600"}`}
+          >
+            Dev
+          </button>
         </div>
       </div>
 
@@ -271,6 +279,7 @@ export function GmailDashboardSection({
             }
             syncedAtLabel={syncedAtLabel}
             errorMessage={activeError}
+            developerMode={developerMode}
           />
         </div>
       </div>
