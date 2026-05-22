@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
@@ -43,6 +44,15 @@ export default async function LoginPage() {
         <p className="mt-6 text-xs leading-5 text-slate-400">
           Protected by Google OAuth and database sessions.
         </p>
+
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+          <Link className="transition-colors hover:text-white" href="/privacy">
+            Privacy Policy
+          </Link>
+          <Link className="transition-colors hover:text-white" href="/terms">
+            Terms of Service
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { CheckCircle2, Mail, ShieldCheck, UserCircle2 } from "lucide-react";
 
 import { ConnectGmailButton } from "./connect-gmail-button";
+import { DisconnectGmailButton } from "./disconnect-gmail-button";
 
 type GmailUser = {
   name?: string | null;
@@ -67,6 +68,18 @@ export function GmailStatusCard({
 
       <div className="grid gap-4 p-5 md:grid-cols-[1.2fr_0.8fr] md:p-6">
         <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-700 shadow-sm">
+              Gmail Read-only
+            </span>
+            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-700 shadow-sm">
+              Can read messages
+            </span>
+            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-700 shadow-sm">
+              Cannot send or delete emails
+            </span>
+          </div>
+
           <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/60 p-4 transition-shadow hover:shadow-sm">
             <div className="flex items-start gap-3">
               <div className="rounded-xl bg-white p-2 text-zinc-700 shadow-sm">
@@ -124,16 +137,22 @@ export function GmailStatusCard({
 
           <div className="mt-5">
             {gmailConnected ? (
-              <button
-                type="button"
-                disabled
-                className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[13px] font-medium text-emerald-700"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Gmail Connected
-              </button>
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[13px] font-medium text-emerald-700"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Gmail Connected
+                </button>
+                <DisconnectGmailButton />
+              </div>
             ) : needsReconnect ? (
-              <ConnectGmailButton label="Reconnect Gmail" />
+              <div className="space-y-3">
+                <ConnectGmailButton label="Reconnect Gmail" />
+                <DisconnectGmailButton />
+              </div>
             ) : (
               <ConnectGmailButton label="Connect Gmail" />
             )}

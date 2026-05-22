@@ -184,6 +184,18 @@ function Sidebar({
             Logout
           </button>
         </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3 text-[11px] text-white/40">
+          <Link
+            href="/privacy"
+            className="transition-colors hover:text-white/75"
+          >
+            Privacy
+          </Link>
+          <Link href="/terms" className="transition-colors hover:text-white/75">
+            Terms
+          </Link>
+        </div>
       </div>
     </aside>
   );

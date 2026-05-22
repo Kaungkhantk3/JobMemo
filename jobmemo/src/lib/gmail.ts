@@ -9,7 +9,7 @@ import type {
 } from "@/types/gmail";
 
 const INBOX_QUERY =
-  'category:primary newer_than:90d -label:spam -label:trash (application OR applied OR recruiter OR interview OR assessment OR offer OR rejection OR received OR confirmation OR stage OR question OR transcript OR availability OR next step)';
+  "category:primary newer_than:90d -label:spam -label:trash (application OR applied OR recruiter OR interview OR assessment OR offer OR rejection OR received OR confirmation OR stage OR question OR transcript OR availability OR next step)";
 
 const SENT_QUERY =
   "in:sent newer_than:365d (apply OR application OR cv OR resume) -label:spam -label:trash";
@@ -56,6 +56,17 @@ const NOISY_NOREPLY_PHRASES = [
   "promotion",
   "top jobs",
   "career advice",
+];
+
+const SECURITY_SENSITIVE_PHRASES = [
+  "verification code",
+  "password reset",
+  "security alert",
+  "one-time passcode",
+  "bank",
+  "payment",
+  "invoice",
+  "credit card",
 ];
 
 const JOB_STATUS_RULES: Array<{
@@ -159,11 +170,7 @@ const DOMAIN_BONUS = [
   "recruitee.com",
 ];
 
-const DOMAIN_PENALTY = [
-  "coursera.org",
-  "udemy.com",
-  "linkedin.com",
-];
+const DOMAIN_PENALTY = ["coursera.org", "udemy.com", "linkedin.com"];
 
 const CLASSIFICATION_THRESHOLD = 3;
 
@@ -298,16 +305,39 @@ function buildConfidenceBand(confidence: number): GmailConfidenceBand {
   return "low";
 }
 
+function isSecuritySensitiveEmail(
+  subject: string,
+  from: string,
+  snippet: string,
+) {
+  const text = normalizeText(subject, from, snippet).toLowerCase();
+
+  return (
+    /\botp\b/.test(text) ||
+    SECURITY_SENSITIVE_PHRASES.some((phrase) => text.includes(phrase))
+  );
+}
+
 export function classifyJobEmail(email: {
   subject: string;
   from: string;
   snippet?: string;
   mailbox: GmailMailboxKind;
-}) {
+}): {
+  status: Exclude<GmailJobStatus, "UNKNOWN"> | "UNKNOWN";
+  confidence: number;
+  confidenceBand: GmailConfidenceBand;
+  matchedKeywords: string[];
+  reason: string;
+} | null {
   const subject = email.subject || "";
   const from = email.from || "";
   const snippet = email.snippet || "";
   const combinedText = getCombinedText(subject, from, snippet);
+
+  if (isSecuritySensitiveEmail(subject, from, snippet)) {
+    return null;
+  }
 
   // Check for noisy no-reply emails
   if (isNoisyNoreplyEmail(from, subject, snippet)) {
@@ -421,9 +451,7 @@ function extractCompanyAndRole(subject: string, from: string) {
   const s = subject || "";
 
   // Try "application for the [ROLE] role" pattern
-  const rolePatternMatch = s.match(
-    /application\s+for\s+the\s+(.+?)\s+role/i,
-  );
+  const rolePatternMatch = s.match(/application\s+for\s+the\s+(.+?)\s+role/i);
   if (rolePatternMatch) {
     const role = rolePatternMatch[1].trim();
     return { role, company: extractCompanyFromSender(from) };
@@ -526,6 +554,10 @@ async function fetchJobEmails(
         snippet,
         mailbox,
       });
+
+      if (!classification) {
+        return null;
+      }
 
       const parsed = extractCompanyAndRole(subject, from);
       const applicationState = normalizeApplicationState(
