@@ -43,6 +43,31 @@ export default async function GmailPage() {
           hasAccessToken={hasAccessToken}
         />
 
+        <section className="rounded-3xl border border-amber-200 bg-amber-50/70 p-5 shadow-sm md:p-6">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-amber-700">
+            Temporary OAuth debug
+          </p>
+          <div className="mt-4 space-y-3 text-[13px] leading-6 text-zinc-700">
+            <div className="rounded-2xl border border-amber-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                account.scope
+              </p>
+              <p className="mt-2 break-words font-mono text-[12px] text-zinc-900">
+                {account?.scope ?? "No account scope available"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-amber-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                scopeIncludesGmail
+              </p>
+              <p className="mt-2 font-mono text-[12px] text-zinc-900">
+                {String(account?.scope?.includes("gmail.readonly") ?? false)}
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm md:p-6">
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
             Reconnect only

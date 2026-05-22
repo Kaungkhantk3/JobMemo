@@ -13,14 +13,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
       authorization: {
         params: {
+          scope:
+            "openid email profile https://www.googleapis.com/auth/gmail.readonly",
           prompt: "consent",
           access_type: "offline",
           response_type: "code",
-          scope:
-            "openid email profile https://www.googleapis.com/auth/gmail.readonly",
+          include_granted_scopes: "true",
         },
       },
-      checks: ["pkce", "state"],
     }),
   ],
 
