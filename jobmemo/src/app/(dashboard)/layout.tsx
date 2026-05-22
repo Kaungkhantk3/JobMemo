@@ -15,5 +15,15 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  return <SidebarWrapper user={session.user}>{children}</SidebarWrapper>;
+  return (
+    <SidebarWrapper
+      user={{
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
+      }}
+    >
+      {children}
+    </SidebarWrapper>
+  );
 }
