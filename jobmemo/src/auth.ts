@@ -11,6 +11,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+      allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           scope:
@@ -29,6 +30,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 
   callbacks: {
+    async signIn() {
+      return true;
+    },
     async jwt({ token, account }) {
       if (account) {
         console.log("JWT_ACCOUNT_SCOPE:", account.scope);
