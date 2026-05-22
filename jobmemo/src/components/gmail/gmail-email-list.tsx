@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   Inbox,
   Mail,
@@ -10,6 +13,7 @@ import {
 import type { GmailMessage } from "@/types/gmail";
 
 import { ConnectGmailButton } from "./connect-gmail-button";
+import { filterRelevantEmails } from "./gmail-display-utils";
 
 function formatEmailDate(dateString: string) {
   const date = new Date(dateString);
@@ -64,7 +68,7 @@ export function GmailEmailList({
   errorMessage,
   emptyTitle = "No matching Gmail messages yet",
   emptyDescription = "JobMemo checks the latest inbox and sent mail for relevant job activity.",
-  developerMode = false,
+  showDebugEmails = false,
 }: {
   emails: GmailMessage[];
   title: string;
@@ -74,63 +78,15 @@ export function GmailEmailList({
   errorMessage?: string;
   emptyTitle?: string;
   emptyDescription?: string;
-  developerMode?: boolean;
+  showDebugEmails?: boolean;
 }) {
-  const strongPhrases: Record<string, string[]> = {
-    APPLIED: [
-      "thank you for your application",
-      "we received your application",
-      "application received",
-      "your application for",
-      "currently reviewing your application",
-    ],
-    INTERVIEW: [
-      "interview",
-      "schedule a call",
-      "availability",
-      "meet with",
-      "next stage",
-    ],
-    ASSESSMENT: [
-      "assessment",
-      "coding challenge",
-      "online test",
-      "technical test",
-      "answer a few questions",
-    ],
-    REJECTION: [
-      "unfortunately",
-      "not selected",
-      "regret to inform",
-      "moved forward with other candidates",
-    ],
-    OFFER: [
-      "offer letter",
-      "pleased to offer",
-      "job offer",
-      "compensation package",
-    ],
-  };
+  const [visibleCount, setVisibleCount] = useState(5);
 
-  function matchesStrongPhrases(email: GmailMessage) {
-    const text = `${email.subject ?? ""} ${email.snippet ?? ""}`.toLowerCase();
-    for (const phrases of Object.values(strongPhrases)) {
-      for (const p of phrases) {
-        if (text.includes(p)) return true;
-      }
-    }
-    return false;
-  }
-
-  const filteredEmails = emails.filter((email) => {
-    // hide UNKNOWN by default
-    if (email.category === "UNKNOWN") return false;
-    // hide low-confidence by default
-    if (email.confidenceBand === "low") return false;
-    // require strong phrase match
-    if (!matchesStrongPhrases(email)) return false;
-    return true;
-  });
+  const filteredEmails = showDebugEmails
+    ? emails
+    : filterRelevantEmails(emails);
+  const visibleEmails = filteredEmails.slice(0, visibleCount);
+  const hasMoreEmails = visibleCount < filteredEmails.length;
   if (errorMessage) {
     return (
       <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
@@ -255,55 +211,74 @@ export function GmailEmailList({
         </div>
       </div>
 
-      <div className="max-h-[72vh] divide-y divide-zinc-100 overflow-y-auto">
-        {filteredEmails.map((email) => {
-          return (
-            <article
-              key={email.id}
-              className="group flex flex-col gap-3 px-5 py-4 transition-all duration-200 hover:bg-zinc-50/80 md:px-6"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
-                    {email.subject ?? "(No subject)"}
-                  </p>
-                  <p className="mt-2 text-[13px] text-zinc-700 line-clamp-2">
-                    {email.snippet ?? ""}
-                  </p>
-                  <div className="mt-2 flex items-center gap-3">
-                    {statusLabel(email.applicationState ?? email.status) ? (
-                      <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-700">
-                        {statusLabel(email.applicationState ?? email.status)}
-                      </span>
-                    ) : null}
-                    <div className="text-[13px] text-zinc-700">
-                      <div className="font-medium">
-                        {email.company ?? "Unknown company"}
-                      </div>
-                      <div className="text-[13px]">
-                        {email.role ?? "Role not detected"}
+      <div className="border-t border-zinc-100">
+        <div className="max-h-[520px] divide-y divide-zinc-100 overflow-y-auto">
+          {visibleEmails.map((email) => {
+            return (
+              <article
+                key={email.id}
+                className="group flex flex-col gap-3 px-5 py-4 transition-all duration-200 hover:bg-zinc-50/80 md:px-6"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
+                      {email.subject ?? "(No subject)"}
+                    </p>
+                    <p className="mt-2 text-[13px] text-zinc-700 line-clamp-2">
+                      {email.snippet ?? ""}
+                    </p>
+                    <div className="mt-2 flex items-center gap-3">
+                      {statusLabel(email.applicationState ?? email.status) ? (
+                        <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-700">
+                          {statusLabel(email.applicationState ?? email.status)}
+                        </span>
+                      ) : null}
+                      <div className="text-[13px] text-zinc-700">
+                        <div className="font-medium">
+                          {email.company ?? "Unknown company"}
+                        </div>
+                        <div className="text-[13px]">
+                          {email.role ?? "Role not detected"}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <span className="shrink-0 text-[12px] text-zinc-500">
-                  {formatEmailDate(email.date)}
-                </span>
-              </div>
-              {developerMode ? (
-                <div className="mt-2 text-[12px] text-zinc-500">
-                  <div>
-                    Matched keywords: {email.matchedKeywords.join(", ") || "-"}
-                  </div>
-                  <div>Sender domain: {email.senderDomain || "-"}</div>
-                  <div>Why: {email.reason || "-"}</div>
-                  <div>Confidence: {confidenceLabel(email.confidence)}</div>
+                  <span className="shrink-0 text-[12px] text-zinc-500">
+                    {formatEmailDate(email.date)}
+                  </span>
                 </div>
-              ) : null}
-            </article>
-          );
-        })}
+                {showDebugEmails ? (
+                  <div className="mt-2 text-[12px] text-zinc-500">
+                    <div>
+                      Matched keywords:{" "}
+                      {email.matchedKeywords.join(", ") || "-"}
+                    </div>
+                    <div>Sender domain: {email.senderDomain || "-"}</div>
+                    <div>Why: {email.reason || "-"}</div>
+                    <div>Confidence: {confidenceLabel(email.confidence)}</div>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-zinc-100 px-5 py-4 md:px-6">
+          <p className="text-[12px] text-zinc-500">
+            Showing {visibleEmails.length} of {filteredEmails.length}
+          </p>
+
+          {hasMoreEmails ? (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((count) => count + 10)}
+              className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-3.5 py-2 text-[12px] font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50"
+            >
+              Show more
+            </button>
+          ) : null}
+        </div>
       </div>
     </section>
   );

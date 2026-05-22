@@ -2,73 +2,23 @@
 
 import { useState, type ComponentType } from "react";
 import {
-  BadgeAlert,
-  BadgeCheck,
-  BriefcaseBusiness,
-  Clock3,
   Inbox,
-  Rocket,
   Sparkles,
   TrendingUp,
   Send,
-  CircleHelp,
+  BadgeCheck,
+  BriefcaseBusiness,
+  Rocket,
 } from "lucide-react";
 
 import type { GmailMailboxKind, GmailMessage } from "@/types/gmail";
 
 import { GmailEmailList } from "./gmail-email-list";
-
-type GmailStats = {
-  total: number;
-  applied: number;
-  interviewing: number;
-  assessment: number;
-  rejected: number;
-  offer: number;
-  unknown: number;
-};
-
-function buildStats(emails: GmailMessage[]): GmailStats {
-  return emails.reduce<GmailStats>(
-    (stats, email) => {
-      stats.total += 1;
-
-      switch (email.applicationState ?? email.status) {
-        case "APPLIED":
-          stats.applied += 1;
-          break;
-        case "INTERVIEW":
-          stats.interviewing += 1;
-          break;
-        case "ASSESSMENT":
-          stats.assessment += 1;
-          break;
-        case "REJECTION":
-          stats.rejected += 1;
-          break;
-        case "OFFER":
-          stats.offer += 1;
-          break;
-        case "UNKNOWN":
-          stats.unknown += 1;
-          break;
-        default:
-          break;
-      }
-
-      return stats;
-    },
-    {
-      total: 0,
-      applied: 0,
-      interviewing: 0,
-      assessment: 0,
-      rejected: 0,
-      offer: 0,
-      unknown: 0,
-    },
-  );
-}
+import {
+  buildGmailDashboardStats,
+  filterRelevantEmails,
+  getMailboxCountLabel,
+} from "./gmail-display-utils";
 
 function StatCard({
   label,
@@ -136,13 +86,13 @@ function TabButton({
 
 function titleForMailbox(mailbox: GmailMailboxKind) {
   return mailbox === "APPLICATIONS_SENT"
-    ? "Applications Sent"
-    : "Inbox Activity";
+    ? "Sent applications"
+    : "Inbox replies";
 }
 
 function descriptionForMailbox(mailbox: GmailMailboxKind) {
   return mailbox === "APPLICATIONS_SENT"
-    ? "Sent applications and resume emails that help you track what you’ve already sent."
+    ? "Sent job applications and resume emails that help you track what you’ve already sent."
     : "Received recruiter replies, interview invites, assessments, rejections, and offers.";
 }
 
@@ -161,13 +111,16 @@ export function GmailDashboardSection({
 }) {
   const [activeMailbox, setActiveMailbox] =
     useState<GmailMailboxKind>("INBOX_ACTIVITY");
+  const [showDebugEmails, setShowDebugEmails] = useState(false);
 
   const activeEmails =
     activeMailbox === "APPLICATIONS_SENT" ? sentEmails : inboxEmails;
   const activeError =
     activeMailbox === "APPLICATIONS_SENT" ? sentError : inboxError;
-  const activeStats = buildStats(activeEmails);
-  const [developerMode, setDeveloperMode] = useState(false);
+  const visibleEmails = showDebugEmails
+    ? activeEmails
+    : filterRelevantEmails(activeEmails);
+  const activeStats = buildGmailDashboardStats(activeEmails);
 
   return (
     <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
@@ -199,18 +152,24 @@ export function GmailDashboardSection({
           </span>
           <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
             <Inbox className="h-3.5 w-3.5" />
-            {inboxEmails.length} inbox matches
+            {getMailboxCountLabel(
+              "INBOX_ACTIVITY",
+              filterRelevantEmails(inboxEmails).length,
+            )}
           </span>
           <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
             <Send className="h-3.5 w-3.5" />
-            {sentEmails.length} sent applications
+            {getMailboxCountLabel(
+              "APPLICATIONS_SENT",
+              filterRelevantEmails(sentEmails).length,
+            )}
           </span>
           <button
             type="button"
-            onClick={() => setDeveloperMode((s) => !s)}
-            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[12px] font-medium ${developerMode ? "border-amber-400 bg-amber-50 text-amber-800" : "border-zinc-200 bg-white text-zinc-600"}`}
+            onClick={() => setShowDebugEmails((s) => !s)}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[12px] font-medium ${showDebugEmails ? "border-amber-400 bg-amber-50 text-amber-800" : "border-zinc-200 bg-white text-zinc-600"}`}
           >
-            Dev
+            Show debug emails
           </button>
         </div>
       </div>
@@ -219,15 +178,15 @@ export function GmailDashboardSection({
         <div className="flex flex-wrap gap-2">
           <TabButton
             active={activeMailbox === "INBOX_ACTIVITY"}
-            count={inboxEmails.length}
-            label="Inbox Activity"
+            count={filterRelevantEmails(inboxEmails).length}
+            label="Inbox replies"
             icon={Inbox}
             onClick={() => setActiveMailbox("INBOX_ACTIVITY")}
           />
           <TabButton
             active={activeMailbox === "APPLICATIONS_SENT"}
-            count={sentEmails.length}
-            label="Applications Sent"
+            count={filterRelevantEmails(sentEmails).length}
+            label="Sent applications"
             icon={Send}
             onClick={() => setActiveMailbox("APPLICATIONS_SENT")}
           />
@@ -235,51 +194,43 @@ export function GmailDashboardSection({
       </div>
 
       <div className="p-5 md:p-6">
-        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-7">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Total"
-            value={activeStats.total}
+            label="Total relevant"
+            value={activeStats.totalRelevant}
             icon={BriefcaseBusiness}
           />
           <StatCard
-            label="Applied"
-            value={activeStats.applied}
+            label="Interviews"
+            value={activeStats.interviews}
             icon={BadgeCheck}
           />
           <StatCard
-            label="Interview"
-            value={activeStats.interviewing}
-            icon={Clock3}
-          />
-          <StatCard
-            label="Assessment"
-            value={activeStats.assessment}
+            label="Assessments"
+            value={activeStats.assessments}
             icon={Sparkles}
           />
           <StatCard
-            label="Rejected"
-            value={activeStats.rejected}
-            icon={BadgeAlert}
-          />
-          <StatCard label="Offer" value={activeStats.offer} icon={Rocket} />
-          <StatCard
-            label="Unknown"
-            value={activeStats.unknown}
-            icon={CircleHelp}
+            label="Offers/Rejections"
+            value={activeStats.offersRejections}
+            icon={Rocket}
           />
         </div>
 
         <div className="mt-5">
           <GmailEmailList
-            emails={activeEmails}
+            key={`${activeMailbox}-${showDebugEmails ? "debug" : "clean"}`}
+            emails={visibleEmails}
             title={titleForMailbox(activeMailbox)}
             description={descriptionForMailbox(activeMailbox)}
             mailboxLabel={
-              activeMailbox === "APPLICATIONS_SENT" ? "Sent" : "Inbox"
+              activeMailbox === "APPLICATIONS_SENT"
+                ? "Sent applications"
+                : "Inbox replies"
             }
             syncedAtLabel={syncedAtLabel}
             errorMessage={activeError}
-            developerMode={developerMode}
+            showDebugEmails={showDebugEmails}
           />
         </div>
       </div>
