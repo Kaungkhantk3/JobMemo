@@ -21,11 +21,11 @@ import type {
 
 import { GmailEmailList } from "./gmail-email-list";
 import {
+  buildGmailDashboardStats,
   filterHiddenEmails,
   filterNeedsReviewEmails,
   filterRelevantEmails,
   getMailboxCountLabel,
-  getResolvedEmailStatus,
 } from "./gmail-display-utils";
 
 type EmailReview = {
@@ -171,16 +171,7 @@ export function GmailDashboardSection({
   const activeNeedsReviewEmails = filterNeedsReviewEmails(activeEmails);
   const activeHiddenEmails = filterHiddenEmails(activeEmails);
 
-  const activeStats = {
-    relevantEmails: activeRelevantEmails.length,
-    applications: activeRelevantEmails.filter((email) => {
-      const resolvedStatus = getResolvedEmailStatus(email);
-
-      return resolvedStatus === "APPLIED" || resolvedStatus === "SENT";
-    }).length,
-    needsReview: activeNeedsReviewEmails.length,
-    hidden: activeHiddenEmails.length,
-  };
+  const activeStats = buildGmailDashboardStats(activeEmails);
 
   async function patchReview(
     emailId: string,
@@ -355,24 +346,36 @@ export function GmailDashboardSection({
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Relevant emails"
-            value={activeStats.relevantEmails}
+            value={activeStats.totalRelevant}
             icon={BriefcaseBusiness}
           />
           <StatCard
-            label="Applications"
-            value={activeStats.applications}
+            label="Applied"
+            value={activeStats.applied}
             icon={BadgeCheck}
+          />
+          <StatCard
+            label="Interviews"
+            value={activeStats.interviews}
+            icon={TrendingUp}
+          />
+          <StatCard
+            label="Assessments"
+            value={activeStats.assessments}
+            icon={Sparkles}
+          />
+          <StatCard label="Offers" value={activeStats.offers} icon={Send} />
+          <StatCard
+            label="Rejections"
+            value={activeStats.rejections}
+            icon={BadgeAlert}
           />
           <StatCard
             label="Needs review"
             value={activeStats.needsReview}
             icon={SearchX}
           />
-          <StatCard
-            label="Hidden"
-            value={activeStats.hidden}
-            icon={BadgeAlert}
-          />
+          <StatCard label="Hidden" value={activeStats.hidden} icon={Inbox} />
         </div>
 
         <div className="mt-5 space-y-5">

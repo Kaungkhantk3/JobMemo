@@ -1,5 +1,13 @@
 import type { GmailMessage, GmailJobStatus } from "@/types/gmail";
 
+const REVIEWED_JOB_STATUSES: Exclude<GmailJobStatus, "UNKNOWN">[] = [
+  "APPLIED",
+  "INTERVIEW",
+  "ASSESSMENT",
+  "OFFER",
+  "REJECTION",
+];
+
 const STRONG_JOB_PHRASES: Record<string, string[]> = {
   APPLIED: [
     "thank you for your application",
@@ -71,6 +79,10 @@ export function isNeedsReviewEmail(email: GmailMessage) {
     return false;
   }
 
+  if (email.reviewed || email.userCorrectedStatus) {
+    return false;
+  }
+
   const resolvedStatus = getResolvedEmailStatus(email);
 
   if (resolvedStatus === "UNKNOWN") {
@@ -97,15 +109,14 @@ export function isRelevantEmail(email: GmailMessage) {
     return false;
   }
 
-  if (email.category === "UNKNOWN") {
-    return false;
-  }
+  const resolvedStatus = getResolvedEmailStatus(email);
 
-  if (email.confidenceBand === "low") {
-    return false;
-  }
-
-  return getStrongPhraseMatch(email).matched;
+  return (
+    resolvedStatus === "SENT" ||
+    REVIEWED_JOB_STATUSES.includes(
+      resolvedStatus as Exclude<GmailJobStatus, "UNKNOWN">,
+    )
+  );
 }
 
 export function filterRelevantEmails(emails: GmailMessage[]) {
@@ -123,6 +134,12 @@ export function filterHiddenEmails(emails: GmailMessage[]) {
 export function buildGmailDashboardStats(emails: GmailMessage[]) {
   const relevantEmails = filterRelevantEmails(emails);
 
+  const applied = relevantEmails.filter((email) => {
+    const status = getResolvedEmailStatus(email);
+
+    return status === "APPLIED" || status === "SENT";
+  }).length;
+
   const interviews = relevantEmails.filter(
     (email) => getResolvedEmailStatus(email) === "INTERVIEW",
   ).length;
@@ -131,17 +148,26 @@ export function buildGmailDashboardStats(emails: GmailMessage[]) {
     (email) => getResolvedEmailStatus(email) === "ASSESSMENT",
   ).length;
 
-  const offersRejections = relevantEmails.filter((email) => {
-    const status = getResolvedEmailStatus(email);
+  const offers = relevantEmails.filter(
+    (email) => getResolvedEmailStatus(email) === "OFFER",
+  ).length;
 
-    return status === "OFFER" || status === "REJECTION";
-  }).length;
+  const rejections = relevantEmails.filter(
+    (email) => getResolvedEmailStatus(email) === "REJECTION",
+  ).length;
+
+  const needsReview = filterNeedsReviewEmails(emails).length;
+  const hidden = filterHiddenEmails(emails).length;
 
   return {
     totalRelevant: relevantEmails.length,
+    applied,
     interviews,
     assessments,
-    offersRejections,
+    offers,
+    rejections,
+    needsReview,
+    hidden,
   };
 }
 
