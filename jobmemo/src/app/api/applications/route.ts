@@ -1,4 +1,9 @@
 import { auth } from "@/auth";
+import {
+  applicationEventTitleForStatus,
+  applicationEventTypeForStatus,
+  normalizeApplicationStatus,
+} from "@/lib/applications";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -40,7 +45,17 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    const { company, position, jobUrl, notes, status, appliedAt } = body;
+    const {
+      company,
+      position,
+      role,
+      jobUrl,
+      notes,
+      status,
+      currentStatus,
+      appliedAt,
+      source,
+    } = body;
 
     if (!company || !position) {
       return NextResponse.json(
@@ -49,11 +64,21 @@ export async function POST(req: Request) {
       );
     }
 
+    const resolvedStatus =
+      normalizeApplicationStatus(currentStatus ?? status) ?? "APPLIED";
+    const resolvedSource = typeof source === "string" ? source : "manual";
+
     const existingApplication = await prisma.application.findFirst({
       where: {
         userId: session.user.id,
-        company,
-        position,
+        company: {
+          equals: company.trim(),
+          mode: "insensitive",
+        },
+        position: {
+          equals: position.trim(),
+          mode: "insensitive",
+        },
       },
     });
 
@@ -66,15 +91,32 @@ export async function POST(req: Request) {
 
     const application = await prisma.application.create({
       data: {
-        company,
-        position,
+        company: company.trim(),
+        role: role?.trim() || position.trim(),
+        position: position.trim(),
         jobUrl,
         notes,
-        status,
+        status: resolvedStatus,
+        currentStatus: resolvedStatus,
+        source: resolvedSource,
         appliedAt: appliedAt ? new Date(appliedAt) : null,
         userId: session.user.id,
       },
     });
+
+    if (resolvedStatus !== "SAVED") {
+      await prisma.applicationEvent.create({
+        data: {
+          applicationId: application.id,
+          type: applicationEventTypeForStatus(resolvedStatus),
+          title: applicationEventTitleForStatus(
+            resolvedStatus,
+            application.company,
+            application.role || application.position,
+          ),
+        },
+      });
+    }
 
     return NextResponse.json(application, {
       status: 201,

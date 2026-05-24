@@ -1,4 +1,9 @@
 import { auth } from "@/auth";
+import {
+  applicationEventTitleForStatus,
+  applicationEventTypeForStatus,
+  normalizeApplicationStatus,
+} from "@/lib/applications";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -18,6 +23,9 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
 
     const body = await req.json();
+    const nextStatus = normalizeApplicationStatus(
+      body.currentStatus ?? body.status,
+    );
 
     const existing = await prisma.application.findFirst({
       where: {
@@ -35,14 +43,34 @@ export async function PATCH(req: Request, context: RouteContext) {
         id,
       },
       data: {
-        company: body.company,
-        position: body.position,
+        company: body.company?.trim() ?? existing.company,
+        role: body.role?.trim() ?? body.position?.trim() ?? existing.role,
+        position: body.position?.trim() ?? existing.position,
         jobUrl: body.jobUrl || null,
         notes: body.notes || null,
-        status: body.status,
+        status: nextStatus ?? existing.status,
+        currentStatus: nextStatus ?? existing.currentStatus ?? existing.status,
+        source: body.source ?? existing.source,
         appliedAt: body.appliedAt ? new Date(body.appliedAt) : null,
       },
     });
+
+    const statusChanged =
+      nextStatus !== null && nextStatus !== existing.currentStatus;
+
+    if (statusChanged) {
+      await prisma.applicationEvent.create({
+        data: {
+          applicationId: updatedApplication.id,
+          type: applicationEventTypeForStatus(nextStatus),
+          title: applicationEventTitleForStatus(
+            nextStatus,
+            updatedApplication.company,
+            updatedApplication.role || updatedApplication.position,
+          ),
+        },
+      });
+    }
 
     return NextResponse.json(updatedApplication);
   } catch (error) {

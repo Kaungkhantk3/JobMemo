@@ -9,8 +9,7 @@ import {
   getRecentJobEmails,
   getSentApplicationEmails,
 } from "@/lib/gmail";
-import { ApplicationsTable } from "@/components/applications/applications-table";
-import { GmailDashboardSection } from "@/components/gmail/gmail-dashboard-section";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import type { GmailMessage } from "@/types/gmail";
 
 function mergeEmailReviews(
@@ -148,19 +147,14 @@ export default async function DashboardPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-5">
-        <div className="space-y-4">
-          <GmailDashboardSection
-            inboxEmails={inboxEmails}
-            sentEmails={sentEmails}
-            inboxError={inboxError}
-            sentError={sentError}
-            syncedAtLabel="just now"
-          />
-
-          <ApplicationsTable
-            applications={JSON.parse(JSON.stringify(applications))}
-          />
-        </div>
+        <DashboardContent
+          applications={JSON.parse(JSON.stringify(applications))}
+          inboxEmails={inboxEmails}
+          sentEmails={sentEmails}
+          inboxError={inboxError}
+          sentError={sentError}
+          syncedAtLabel="just now"
+        />
       </div>
     </div>
   );

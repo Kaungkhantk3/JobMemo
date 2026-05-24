@@ -46,20 +46,24 @@ export function ApplicationsTable({
 
   const filtered = applications.filter((a) => {
     const q = search.toLowerCase();
+    const role = a.role ?? a.position;
     return (
-      (a.company.toLowerCase().includes(q) ||
-        a.position.toLowerCase().includes(q)) &&
-      (!statusFilter || a.status === statusFilter)
+      (a.company.toLowerCase().includes(q) || role.toLowerCase().includes(q)) &&
+      (!statusFilter || (a.currentStatus ?? a.status) === statusFilter)
     );
   });
 
   const total = applications.length;
   const interviews = applications.filter(
-    (a) => a.status === "INTERVIEW",
+    (a) => (a.currentStatus ?? a.status) === "INTERVIEW",
   ).length;
-  const offers = applications.filter((a) => a.status === "OFFER").length;
+  const offers = applications.filter(
+    (a) => (a.currentStatus ?? a.status) === "OFFER",
+  ).length;
   const pending = applications.filter(
-    (a) => a.status === "APPLIED" || a.status === "GHOSTED",
+    (a) =>
+      (a.currentStatus ?? a.status) === "APPLIED" ||
+      (a.currentStatus ?? a.status) === "GHOSTED",
   ).length;
   const interviewRate = total ? Math.round((interviews / total) * 100) : 0;
 
@@ -230,10 +234,10 @@ export function ApplicationsTable({
                     {app.company}
                   </p>
                   <p className="text-zinc-500 text-[12px] truncate mt-0.5">
-                    {app.position}
+                    {app.role ?? app.position}
                   </p>
                 </div>
-                <StatusBadge status={app.status} />
+                <StatusBadge status={app.currentStatus ?? app.status} />
               </div>
               <div className="flex items-center justify-between mt-2.5">
                 <div className="text-[11px] text-zinc-400 space-y-0.5">
@@ -349,10 +353,10 @@ export function ApplicationsTable({
                     )}
                   </td>
                   <td className="px-3.5 py-3 text-zinc-700 truncate">
-                    {app.position}
+                    {app.role ?? app.position}
                   </td>
                   <td className="px-3.5 py-3">
-                    <StatusBadge status={app.status} />
+                    <StatusBadge status={app.currentStatus ?? app.status} />
                   </td>
                   <td className="px-3.5 py-3 text-zinc-400 text-[12px]">
                     {fmtDate(app.appliedAt)}

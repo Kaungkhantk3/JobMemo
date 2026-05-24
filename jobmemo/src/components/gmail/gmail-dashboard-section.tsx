@@ -18,8 +18,14 @@ import type {
   GmailMailboxKind,
   GmailMessage,
 } from "@/types/gmail";
+import type { Application } from "@/types/application";
+import {
+  gmailStatusFromReviewDecision,
+  type ReviewDecision,
+} from "@/lib/applications";
 
 import { GmailEmailList } from "./gmail-email-list";
+import { GmailReviewModal } from "./gmail-review-modal";
 import {
   buildGmailDashboardStats,
   filterHiddenEmails,
@@ -32,6 +38,15 @@ type EmailReview = {
   hidden?: boolean;
   reviewed?: boolean;
   userCorrectedStatus?: GmailJobStatus | null;
+  company?: string | null;
+  role?: string | null;
+  status?: string | null;
+  confidence?: number | null;
+  source?: string | null;
+  syncedAt?: string | null;
+  notes?: string | null;
+  threadId?: string | null;
+  applicationId?: string | null;
 };
 
 function StatCard({
@@ -118,6 +133,15 @@ function buildReviewMap(emails: GmailMessage[]) {
         hidden: email.hidden,
         reviewed: email.reviewed,
         userCorrectedStatus: email.userCorrectedStatus ?? null,
+        company: email.company ?? null,
+        role: email.role ?? null,
+        status: email.status ?? null,
+        confidence: email.confidence ?? null,
+        source: email.source ?? null,
+        syncedAt: email.syncedAt ?? null,
+        notes: email.notes ?? null,
+        threadId: email.threadId,
+        applicationId: email.applicationId ?? null,
       } satisfies EmailReview,
     ]),
   ) as Record<string, EmailReview>;
@@ -130,6 +154,15 @@ function applyReview(email: GmailMessage, review?: EmailReview) {
     reviewed: review?.reviewed ?? email.reviewed ?? false,
     userCorrectedStatus:
       review?.userCorrectedStatus ?? email.userCorrectedStatus ?? null,
+    company: review?.company ?? email.company ?? null,
+    role: review?.role ?? email.role ?? null,
+    status: review?.status ?? email.status ?? null,
+    confidence: review?.confidence ?? email.confidence ?? null,
+    source: review?.source ?? email.source ?? null,
+    syncedAt: review?.syncedAt ?? email.syncedAt ?? null,
+    notes: review?.notes ?? email.notes ?? null,
+    threadId: review?.threadId ?? email.threadId,
+    applicationId: review?.applicationId ?? email.applicationId ?? null,
   } satisfies GmailMessage;
 }
 
@@ -139,16 +172,22 @@ export function GmailDashboardSection({
   inboxError,
   sentError,
   syncedAtLabel = "just now",
+  onApplicationTracked,
 }: {
   inboxEmails: GmailMessage[];
   sentEmails: GmailMessage[];
   inboxError?: string;
   sentError?: string;
   syncedAtLabel?: string;
+  onApplicationTracked?: (application: Application) => void;
 }) {
   const [activeMailbox, setActiveMailbox] =
     useState<GmailMailboxKind>("INBOX_ACTIVITY");
   const [showHiddenEmails, setShowHiddenEmails] = useState(false);
+  const [reviewingEmail, setReviewingEmail] = useState<GmailMessage | null>(
+    null,
+  );
+  const [savingReview, setSavingReview] = useState(false);
   const [emailReviews, setEmailReviews] = useState<Record<string, EmailReview>>(
     () => buildReviewMap([...inboxEmails, ...sentEmails]),
   );
@@ -173,37 +212,75 @@ export function GmailDashboardSection({
 
   const activeStats = buildGmailDashboardStats(activeEmails);
 
-  async function patchReview(
-    emailId: string,
-    payload: {
-      hidden?: boolean;
-      reviewed?: boolean;
-      userCorrectedStatus?: GmailJobStatus | null;
-    },
-    optimisticReview: EmailReview,
-    successMessage: string,
-  ) {
-    const previousReview = emailReviews[emailId];
+  function openReviewModal(email: GmailMessage) {
+    setReviewingEmail(email);
+  }
 
+  function closeReviewModal() {
+    if (savingReview) {
+      return;
+    }
+
+    setReviewingEmail(null);
+  }
+
+  async function submitReview(
+    email: GmailMessage,
+    payload: {
+      company: string;
+      role: string;
+      status: ReviewDecision;
+      notes: string;
+      hideEmail: boolean;
+    },
+  ) {
+    const previousReview = emailReviews[email.id];
+    const optimisticReview: EmailReview = {
+      hidden: payload.hideEmail || payload.status === "IGNORE",
+      reviewed: true,
+      userCorrectedStatus: gmailStatusFromReviewDecision(payload.status),
+      company: payload.company,
+      role: payload.role,
+      status: payload.status,
+      confidence: email.confidence,
+      source: "gmail",
+      syncedAt: new Date().toISOString(),
+      notes: payload.notes,
+      threadId: email.threadId,
+    };
+
+    setSavingReview(true);
     setEmailReviews((current) => ({
       ...current,
-      [emailId]: {
-        ...current[emailId],
+      [email.id]: {
+        ...current[email.id],
         ...optimisticReview,
       },
     }));
 
     try {
-      const response = await fetch(`/api/gmail/email/${emailId}`, {
+      const response = await fetch(`/api/gmail/email/${email.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          company: payload.company,
+          role: payload.role,
+          status: payload.status,
+          notes: payload.notes,
+          hidden: payload.hideEmail || payload.status === "IGNORE",
+          reviewed: true,
+          threadId: email.threadId,
+          confidence: email.confidence,
+          emailSubject: email.subject,
+          emailDate: email.date,
+        }),
       });
 
       const result = (await response.json().catch(() => null)) as {
         review?: EmailReview;
+        application?: Application | null;
         error?: string;
       } | null;
 
@@ -213,24 +290,29 @@ export function GmailDashboardSection({
 
       setEmailReviews((current) => ({
         ...current,
-        [emailId]: {
-          ...current[emailId],
-          ...(result?.review ?? payload),
+        [email.id]: {
+          ...current[email.id],
+          ...(result?.review ?? optimisticReview),
         },
       }));
 
-      toast.success(successMessage);
+      if (result?.application) {
+        onApplicationTracked?.(result.application);
+      }
+
+      toast.success("Review saved");
+      return result?.review ?? optimisticReview;
     } catch (error) {
       setEmailReviews((current) => {
         if (previousReview) {
           return {
             ...current,
-            [emailId]: previousReview,
+            [email.id]: previousReview,
           };
         }
 
         const rest = { ...current };
-        delete rest[emailId];
+        delete rest[email.id];
         return rest;
       });
 
@@ -239,33 +321,43 @@ export function GmailDashboardSection({
           ? error.message
           : "Failed to update Gmail review",
       );
+
+      throw error;
+    } finally {
+      setSavingReview(false);
     }
   }
 
-  function hideEmail(emailId: string) {
-    return patchReview(
-      emailId,
-      { hidden: true, reviewed: true },
-      { hidden: true, reviewed: true },
-      "Email hidden",
-    );
+  async function saveReview(payload: {
+    company: string;
+    role: string;
+    status: ReviewDecision;
+    notes: string;
+    hideEmail: boolean;
+  }) {
+    if (!reviewingEmail) {
+      return;
+    }
+
+    await submitReview(reviewingEmail, payload);
+
+    setReviewingEmail(null);
   }
 
-  function updateEmailStatus(emailId: string, status: GmailJobStatus) {
-    return patchReview(
-      emailId,
-      {
-        hidden: false,
-        reviewed: true,
-        userCorrectedStatus: status,
-      },
-      {
-        hidden: false,
-        reviewed: true,
-        userCorrectedStatus: status,
-      },
-      "Classification corrected",
-    );
+  async function hideEmail(emailId: string) {
+    const email = activeEmails.find((entry) => entry.id === emailId);
+
+    if (!email) {
+      return;
+    }
+
+    return submitReview(email, {
+      company: email.company ?? "",
+      role: email.role ?? "",
+      status: "IGNORE",
+      notes: email.notes ?? "",
+      hideEmail: true,
+    });
   }
 
   return (
@@ -393,8 +485,8 @@ export function GmailDashboardSection({
             errorMessage={activeError}
             emptyTitle="No relevant emails yet"
             emptyDescription="JobMemo is waiting for job-related Gmail activity that matches your current mailbox."
+            onReviewEmail={openReviewModal}
             onHideEmail={hideEmail}
-            onChangeStatus={updateEmailStatus}
           />
 
           <section className="rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
@@ -428,8 +520,8 @@ export function GmailDashboardSection({
                 syncedAtLabel={syncedAtLabel}
                 emptyTitle="No emails need review"
                 emptyDescription="Every visible email in this mailbox has enough confidence and metadata to stay in the main list."
+                onReviewEmail={openReviewModal}
                 onHideEmail={hideEmail}
-                onChangeStatus={updateEmailStatus}
               />
             </div>
           </section>
@@ -466,8 +558,8 @@ export function GmailDashboardSection({
                   syncedAtLabel={syncedAtLabel}
                   emptyTitle="No hidden emails"
                   emptyDescription="Hidden emails will appear here after you choose to hide them from the main view."
+                  onReviewEmail={openReviewModal}
                   onHideEmail={hideEmail}
-                  onChangeStatus={updateEmailStatus}
                   actionsEnabled={false}
                 />
               </div>
@@ -475,6 +567,15 @@ export function GmailDashboardSection({
           ) : null}
         </div>
       </div>
+
+      <GmailReviewModal
+        key={reviewingEmail?.id ?? "gmail-review-modal"}
+        open={!!reviewingEmail}
+        email={reviewingEmail}
+        submitting={savingReview}
+        onClose={closeReviewModal}
+        onConfirm={saveReview}
+      />
     </section>
   );
 }

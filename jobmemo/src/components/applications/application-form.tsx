@@ -31,6 +31,8 @@ const empty: CreateApplicationInput = {
   position: "",
   jobUrl: "",
   status: "APPLIED",
+  currentStatus: "APPLIED",
+  source: "manual",
   notes: "",
   appliedAt: new Date().toISOString().split("T")[0],
 };
@@ -46,9 +48,11 @@ export function ApplicationForm({ open, onClose, editing }: Props) {
     if (editing) {
       setForm({
         company: editing.company,
-        position: editing.position,
+        position: editing.role ?? editing.position,
         jobUrl: editing.jobUrl ?? "",
-        status: editing.status,
+        status: editing.currentStatus ?? editing.status,
+        currentStatus: editing.currentStatus ?? editing.status,
+        source: editing.source ?? "manual",
         notes: editing.notes ?? "",
         appliedAt: editing.appliedAt
           ? new Date(editing.appliedAt).toISOString().split("T")[0]
@@ -101,6 +105,9 @@ export function ApplicationForm({ open, onClose, editing }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          role: form.position,
+          currentStatus: form.status,
+          source: form.source ?? "manual",
           appliedAt: form.appliedAt || null,
           jobUrl: form.jobUrl || null,
           notes: form.notes || null,

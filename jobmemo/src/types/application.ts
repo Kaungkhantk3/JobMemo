@@ -10,13 +10,25 @@ export type ApplicationStatus =
 export interface Application {
   id: string;
   company: string;
+  role?: string | null;
   position: string;
   jobUrl?: string | null;
   status: ApplicationStatus;
+  currentStatus?: ApplicationStatus;
+  source?: string | null;
   notes?: string | null;
   appliedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ApplicationEvent {
+  id: string;
+  applicationId: string;
+  type: string;
+  title: string;
+  emailSubject?: string | null;
+  createdAt: string;
 }
 
 export interface CreateApplicationInput {
@@ -24,6 +36,9 @@ export interface CreateApplicationInput {
   position: string;
   jobUrl?: string;
   status: ApplicationStatus;
+  role?: string;
+  currentStatus?: ApplicationStatus;
+  source?: string;
   notes?: string;
   appliedAt?: string;
 }

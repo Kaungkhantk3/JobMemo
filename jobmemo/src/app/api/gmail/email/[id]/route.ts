@@ -1,8 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import {
+  applicationEventTitleForStatus,
+  applicationEventTypeForStatus,
+  applicationStatusFromGmailStatus,
+  gmailStatusFromReviewDecision,
+  normalizeReviewDecision,
+} from "@/lib/applications";
 import { createGmailClient } from "@/lib/gmail";
+import { prisma } from "@/lib/prisma";
 import type { GmailJobStatus } from "@/types/gmail";
 
 const ALLOWED_STATUSES: GmailJobStatus[] = [
@@ -14,6 +21,20 @@ const ALLOWED_STATUSES: GmailJobStatus[] = [
   "RECRUITER",
   "UNKNOWN",
 ];
+
+type ReviewRequestBody = {
+  hidden?: boolean;
+  reviewed?: boolean;
+  userCorrectedStatus?: GmailJobStatus | null;
+  company?: string | null;
+  role?: string | null;
+  status?: string | null;
+  notes?: string | null;
+  confidence?: number | null;
+  threadId?: string | null;
+  emailSubject?: string | null;
+  emailDate?: string | null;
+};
 
 export async function PATCH(
   request: NextRequest,
@@ -27,11 +48,9 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = (await request.json().catch(() => null)) as {
-      hidden?: boolean;
-      reviewed?: boolean;
-      userCorrectedStatus?: GmailJobStatus | null;
-    } | null;
+    const body = (await request
+      .json()
+      .catch(() => null)) as ReviewRequestBody | null;
 
     if (!body) {
       return NextResponse.json(
@@ -43,7 +62,11 @@ export async function PATCH(
     const hasUpdate =
       typeof body.hidden === "boolean" ||
       typeof body.reviewed === "boolean" ||
-      body.userCorrectedStatus !== undefined;
+      body.userCorrectedStatus !== undefined ||
+      body.company !== undefined ||
+      body.role !== undefined ||
+      body.status !== undefined ||
+      body.notes !== undefined;
 
     if (!hasUpdate) {
       return NextResponse.json(
@@ -86,51 +109,208 @@ export async function PATCH(
       account.refresh_token,
     );
 
-    try {
-      await gmail.users.messages.get({
+    const gmailMessage = await gmail.users.messages
+      .get({
         userId: "me",
         id,
         format: "metadata",
         metadataHeaders: ["Subject"],
-      });
-    } catch {
+      })
+      .catch(() => null);
+
+    if (!gmailMessage?.data) {
       return NextResponse.json({ error: "Email not found" }, { status: 404 });
     }
 
-    const review = await prisma.gmailEmailReview.upsert({
-      where: {
-        userId_gmailMessageId: {
+    const subject =
+      body.emailSubject ??
+      gmailMessage.data.payload?.headers?.find(
+        (header) => header.name === "Subject",
+      )?.value ??
+      null;
+    const reviewStatus = normalizeReviewDecision(body.status);
+    const applicationStatus =
+      reviewStatus === "IGNORE"
+        ? null
+        : (reviewStatus ??
+          applicationStatusFromGmailStatus(body.userCorrectedStatus ?? null));
+
+    const review = await prisma.$transaction(async (tx) => {
+      const existingReview = await tx.gmailEmailReview.findUnique({
+        where: {
+          userId_gmailMessageId: {
+            userId: session.user.id,
+            gmailMessageId: id,
+          },
+        },
+      });
+
+      const nextReview = await tx.gmailEmailReview.upsert({
+        where: {
+          userId_gmailMessageId: {
+            userId: session.user.id,
+            gmailMessageId: id,
+          },
+        },
+        create: {
           userId: session.user.id,
           gmailMessageId: id,
+          threadId: body.threadId ?? gmailMessage.data.threadId ?? null,
+          company: body.company?.trim() || null,
+          role: body.role?.trim() || null,
+          status: body.status ?? body.userCorrectedStatus ?? null,
+          confidence: body.confidence ?? null,
+          hidden: body.hidden ?? false,
+          reviewed:
+            (body.reviewed ?? body.hidden === true) ||
+            body.userCorrectedStatus !== undefined ||
+            body.status !== undefined,
+          userCorrectedStatus:
+            body.userCorrectedStatus === undefined
+              ? gmailStatusFromReviewDecision(reviewStatus)
+              : body.userCorrectedStatus,
+          source: "gmail",
+          syncedAt: new Date(),
+          notes: body.notes?.trim() || null,
+          applicationId: null,
         },
-      },
-      create: {
-        userId: session.user.id,
-        gmailMessageId: id,
-        hidden: body.hidden ?? false,
-        reviewed:
-          (body.reviewed ?? body.hidden === true) ||
-          body.userCorrectedStatus !== undefined,
-        userCorrectedStatus:
-          body.userCorrectedStatus === undefined
-            ? null
-            : body.userCorrectedStatus,
-      },
-      update: {
-        ...(body.hidden !== undefined ? { hidden: body.hidden } : {}),
-        ...(body.reviewed !== undefined ? { reviewed: body.reviewed } : {}),
-        ...(body.userCorrectedStatus !== undefined
-          ? { userCorrectedStatus: body.userCorrectedStatus }
-          : {}),
-      },
+        update: {
+          ...(body.threadId !== undefined
+            ? { threadId: body.threadId ?? gmailMessage.data.threadId ?? null }
+            : {}),
+          ...(body.company !== undefined
+            ? { company: body.company?.trim() || null }
+            : {}),
+          ...(body.role !== undefined
+            ? { role: body.role?.trim() || null }
+            : {}),
+          ...(body.status !== undefined ? { status: body.status } : {}),
+          ...(body.confidence !== undefined
+            ? { confidence: body.confidence }
+            : {}),
+          ...(body.hidden !== undefined ? { hidden: body.hidden } : {}),
+          ...(body.reviewed !== undefined ? { reviewed: body.reviewed } : {}),
+          ...(body.userCorrectedStatus !== undefined
+            ? { userCorrectedStatus: body.userCorrectedStatus }
+            : body.status !== undefined
+              ? {
+                  userCorrectedStatus:
+                    gmailStatusFromReviewDecision(reviewStatus),
+                }
+              : {}),
+          ...(body.notes !== undefined
+            ? { notes: body.notes?.trim() || null }
+            : {}),
+          source: "gmail",
+          syncedAt: new Date(),
+        },
+      });
+
+      let application = null;
+
+      if (
+        applicationStatus &&
+        reviewStatus !== "IGNORE" &&
+        (body.company?.trim() || existingReview?.company) &&
+        (body.role?.trim() || existingReview?.role)
+      ) {
+        const company = (
+          body.company?.trim() ||
+          existingReview?.company ||
+          ""
+        ).trim();
+        const role = (body.role?.trim() || existingReview?.role || "").trim();
+        const appliedAt = body.emailDate ? new Date(body.emailDate) : null;
+
+        const existingApplication = await tx.application.findFirst({
+          where: {
+            userId: session.user.id,
+            company: {
+              equals: company,
+              mode: "insensitive",
+            },
+            position: {
+              equals: role,
+              mode: "insensitive",
+            },
+          },
+        });
+
+        const baseApplicationData = {
+          company,
+          role,
+          position: role,
+          notes: body.notes?.trim() || existingApplication?.notes || null,
+          status: applicationStatus,
+          currentStatus: applicationStatus,
+          source: existingApplication?.source ?? "gmail",
+          appliedAt: existingApplication?.appliedAt ?? appliedAt,
+          userId: session.user.id,
+        };
+
+        if (existingApplication) {
+          application = await tx.application.update({
+            where: { id: existingApplication.id },
+            data: baseApplicationData,
+          });
+        } else {
+          application = await tx.application.create({
+            data: baseApplicationData,
+          });
+        }
+
+        await tx.applicationEvent.create({
+          data: {
+            applicationId: application.id,
+            type: applicationEventTypeForStatus(applicationStatus),
+            title: applicationEventTitleForStatus(
+              applicationStatus,
+              application.company,
+              application.role || application.position,
+            ),
+            emailSubject: subject,
+          },
+        });
+
+        await tx.gmailEmailReview.update({
+          where: {
+            userId_gmailMessageId: {
+              userId: session.user.id,
+              gmailMessageId: id,
+            },
+          },
+          data: {
+            company,
+            role,
+            status: reviewStatus ?? body.status ?? null,
+            applicationId: application.id,
+            syncedAt: new Date(),
+          },
+        });
+      }
+
+      return {
+        review: nextReview,
+        application,
+      };
     });
 
     return NextResponse.json({
       review: {
-        hidden: review.hidden,
-        reviewed: review.reviewed,
-        userCorrectedStatus: review.userCorrectedStatus,
+        hidden: review.review.hidden,
+        reviewed: review.review.reviewed,
+        userCorrectedStatus: review.review.userCorrectedStatus,
+        company: review.review.company,
+        role: review.review.role,
+        status: review.review.status,
+        confidence: review.review.confidence,
+        source: review.review.source,
+        syncedAt: review.review.syncedAt,
+        notes: review.review.notes,
+        threadId: review.review.threadId,
+        applicationId: review.application?.id ?? review.review.applicationId,
       },
+      application: review.application,
     });
   } catch (error) {
     console.error(error);

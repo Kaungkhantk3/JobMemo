@@ -31,7 +31,7 @@ export interface GmailMessage {
   date: string;
   mailbox: GmailMailboxKind;
   category: Exclude<GmailMessageCategory, "OTHER">;
-  status: GmailJobStatus;
+  status: string;
   confidence: number;
   confidenceBand: GmailConfidenceBand;
   matchedKeywords: string[];
@@ -42,4 +42,8 @@ export interface GmailMessage {
   hidden?: boolean;
   userCorrectedStatus?: GmailJobStatus | null;
   reviewed?: boolean;
+  source?: string | null;
+  syncedAt?: string | null;
+  notes?: string | null;
+  applicationId?: string | null;
 }

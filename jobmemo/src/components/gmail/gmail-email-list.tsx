@@ -4,14 +4,14 @@ import { useState } from "react";
 import {
   Inbox,
   Mail,
-  MoreHorizontal,
   RefreshCcw,
   SearchX,
   Sparkles,
   TimerReset,
+  Eye,
 } from "lucide-react";
 
-import type { GmailJobStatus, GmailMessage } from "@/types/gmail";
+import type { GmailMessage } from "@/types/gmail";
 
 import { ConnectGmailButton } from "./connect-gmail-button";
 import {
@@ -59,14 +59,6 @@ function statusLabel(
   }
 }
 
-const MANUAL_STATUS_OPTIONS: Array<{ value: GmailJobStatus; label: string }> = [
-  { value: "APPLIED", label: "Applied" },
-  { value: "INTERVIEW", label: "Interview" },
-  { value: "ASSESSMENT", label: "Assessment" },
-  { value: "OFFER", label: "Offer" },
-  { value: "REJECTION", label: "Rejected" },
-];
-
 export function GmailEmailList({
   emails,
   title,
@@ -76,8 +68,8 @@ export function GmailEmailList({
   errorMessage,
   emptyTitle = "No matching Gmail messages yet",
   emptyDescription = "JobMemo checks the latest inbox and sent mail for relevant job activity.",
+  onReviewEmail,
   onHideEmail,
-  onChangeStatus,
   actionsEnabled = true,
 }: {
   emails: GmailMessage[];
@@ -88,12 +80,11 @@ export function GmailEmailList({
   errorMessage?: string;
   emptyTitle?: string;
   emptyDescription?: string;
+  onReviewEmail: (email: GmailMessage) => void;
   onHideEmail: (emailId: string) => void;
-  onChangeStatus: (emailId: string, status: GmailJobStatus) => void;
   actionsEnabled?: boolean;
 }) {
   const [visibleCount, setVisibleCount] = useState(5);
-  const [activeActionId, setActiveActionId] = useState<string | null>(null);
 
   const visibleEmails = emails.slice(0, visibleCount);
   const hasMoreEmails = visibleCount < emails.length;
@@ -263,69 +254,26 @@ export function GmailEmailList({
                       {formatEmailDate(email.date)}
                     </span>
                     {actionsEnabled ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveActionId((current) =>
-                            current === email.id ? null : email.id,
-                          )
-                        }
-                        className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
-                      >
-                        <MoreHorizontal className="h-3.5 w-3.5" />
-                        Review
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onReviewEmail(email)}
+                          className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          Review
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onHideEmail(email.id)}
+                          className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-medium text-rose-700 transition-colors hover:bg-rose-100"
+                        >
+                          Hide
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 </div>
-
-                {actionsEnabled && activeActionId === email.id ? (
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
-                        Review actions
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setActiveActionId(null)}
-                        className="text-[12px] font-medium text-zinc-500 hover:text-zinc-900"
-                      >
-                        Close
-                      </button>
-                    </div>
-
-                    <p className="mt-2 text-[13px] leading-6 text-zinc-600">
-                      Hide this email or correct its status.
-                    </p>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onHideEmail(email.id);
-                          setActiveActionId(null);
-                        }}
-                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[12px] font-medium text-rose-700 hover:bg-rose-100"
-                      >
-                        Hide this email
-                      </button>
-
-                      {MANUAL_STATUS_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => {
-                            onChangeStatus(email.id, option.value);
-                            setActiveActionId(null);
-                          }}
-                          className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] font-medium text-zinc-700 hover:bg-zinc-50"
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
               </article>
             );
           })}
