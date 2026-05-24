@@ -25,7 +25,6 @@ model Application {
   jobUrl        String?
   notes         String?
   status        ApplicationStatus @default(SAVED)
-  source        String            @default("manual")
   appliedAt     DateTime?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt

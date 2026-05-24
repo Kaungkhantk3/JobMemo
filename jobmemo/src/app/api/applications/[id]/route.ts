@@ -46,7 +46,6 @@ export async function PATCH(req: Request, context: RouteContext) {
         jobUrl: body.jobUrl || null,
         notes: body.notes || null,
         status: nextStatus ?? existing.status,
-        source: body.source ?? existing.source,
         appliedAt: body.appliedAt ? new Date(body.appliedAt) : null,
       },
     });

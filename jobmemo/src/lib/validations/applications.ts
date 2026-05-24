@@ -14,7 +14,6 @@ export const applicationSchema = z.object({
     "OFFER",
     "GHOSTED",
   ]),
-  source: z.string().optional(),
   appliedAt: z.string().optional().or(z.literal("")),
 });
 
