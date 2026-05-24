@@ -48,7 +48,6 @@ export async function POST(req: Request) {
     const {
       company,
       position,
-      role,
       jobUrl,
       notes,
       status,
@@ -92,7 +91,6 @@ export async function POST(req: Request) {
     const application = await prisma.application.create({
       data: {
         company: company.trim(),
-        role: role?.trim() || position.trim(),
         position: position.trim(),
         jobUrl,
         notes,
@@ -112,7 +110,7 @@ export async function POST(req: Request) {
           title: applicationEventTitleForStatus(
             resolvedStatus,
             application.company,
-            application.role || application.position,
+            application.position,
           ),
         },
       });

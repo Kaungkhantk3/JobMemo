@@ -44,7 +44,6 @@ export async function PATCH(req: Request, context: RouteContext) {
       },
       data: {
         company: body.company?.trim() ?? existing.company,
-        role: body.role?.trim() ?? body.position?.trim() ?? existing.role,
         position: body.position?.trim() ?? existing.position,
         jobUrl: body.jobUrl || null,
         notes: body.notes || null,
@@ -66,7 +65,7 @@ export async function PATCH(req: Request, context: RouteContext) {
           title: applicationEventTitleForStatus(
             nextStatus,
             updatedApplication.company,
-            updatedApplication.role || updatedApplication.position,
+            updatedApplication.position,
           ),
         },
       });

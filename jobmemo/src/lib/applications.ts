@@ -104,10 +104,12 @@ export function applicationEventTypeForStatus(status: ApplicationStatus) {
 export function applicationEventTitleForStatus(
   status: ApplicationStatus,
   company: string,
-  role: string,
+  position: string,
 ) {
   const label = applicationStatusLabel(status);
-  return role ? `${label}: ${company} · ${role}` : `${label}: ${company}`;
+  return position
+    ? `${label}: ${company} · ${position}`
+    : `${label}: ${company}`;
 }
 
 export function mergeApplicationRecords<T extends { id: string }>(

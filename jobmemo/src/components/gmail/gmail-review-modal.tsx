@@ -2,25 +2,22 @@
 
 import { useState } from "react";
 
-import type { GmailMessage } from "@/types/gmail";
 import {
   applicationStatusFromGmailStatus,
   normalizeReviewDecision,
   type ReviewDecision,
 } from "@/lib/applications";
+import type { GmailMessage } from "@/types/gmail";
 
 type ReviewFormState = {
   company: string;
-  role: string;
+  position: string;
   status: ReviewDecision;
   notes: string;
   hideEmail: boolean;
 };
 
-const STATUS_OPTIONS: Array<{
-  value: ReviewDecision;
-  label: string;
-}> = [
+const STATUS_OPTIONS: Array<{ value: ReviewDecision; label: string }> = [
   { value: "APPLIED", label: "Applied" },
   { value: "ASSESSMENT", label: "Assessment" },
   { value: "INTERVIEW", label: "Interview" },
@@ -30,15 +27,13 @@ const STATUS_OPTIONS: Array<{
 ];
 
 function initialState(email: GmailMessage | null): ReviewFormState {
-  const inferredStatus =
-    normalizeReviewDecision(email?.status) ??
-    applicationStatusFromGmailStatus(email?.userCorrectedStatus ?? null) ??
-    "APPLIED";
-
   return {
     company: email?.company ?? "",
-    role: email?.role ?? "",
-    status: inferredStatus,
+    position: email?.role ?? "",
+    status:
+      normalizeReviewDecision(email?.status) ??
+      applicationStatusFromGmailStatus(email?.userCorrectedStatus ?? null) ??
+      "APPLIED",
     notes: email?.notes ?? "",
     hideEmail: !!email?.hidden,
   };
@@ -74,8 +69,7 @@ export function GmailReviewModal({
             Confirm the tracked application
           </h2>
           <p className="mt-1 text-[13px] leading-6 text-zinc-600">
-            Review the detected company, role, and status before JobMemo creates
-            or updates the application record.
+            Review the detected company, role, and status before JobMemo creates or updates the application record.
           </p>
         </div>
 
@@ -88,8 +82,7 @@ export function GmailReviewModal({
               {email.subject || "(No subject)"}
             </p>
             <p className="mt-1 text-[12px] text-zinc-500">
-              {email.company ?? "Unknown company"} ·{" "}
-              {email.role ?? "Role not detected"}
+              {email.company ?? "Unknown company"} · {email.role ?? "Role not detected"}
             </p>
           </div>
 
@@ -117,11 +110,11 @@ export function GmailReviewModal({
               </span>
               <input
                 className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-[13px] outline-none transition-colors focus:border-zinc-400"
-                value={form.role}
+                value={form.position}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    role: event.target.value,
+                    position: event.target.value,
                   }))
                 }
                 placeholder="Role title"

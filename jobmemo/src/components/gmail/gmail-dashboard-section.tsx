@@ -228,7 +228,7 @@ export function GmailDashboardSection({
     email: GmailMessage,
     payload: {
       company: string;
-      role: string;
+      position: string;
       status: ReviewDecision;
       notes: string;
       hideEmail: boolean;
@@ -240,7 +240,7 @@ export function GmailDashboardSection({
       reviewed: true,
       userCorrectedStatus: gmailStatusFromReviewDecision(payload.status),
       company: payload.company,
-      role: payload.role,
+      role: payload.position,
       status: payload.status,
       confidence: email.confidence,
       source: "gmail",
@@ -266,7 +266,7 @@ export function GmailDashboardSection({
         },
         body: JSON.stringify({
           company: payload.company,
-          role: payload.role,
+          position: payload.position,
           status: payload.status,
           notes: payload.notes,
           hidden: payload.hideEmail || payload.status === "IGNORE",
@@ -330,7 +330,7 @@ export function GmailDashboardSection({
 
   async function saveReview(payload: {
     company: string;
-    role: string;
+    position: string;
     status: ReviewDecision;
     notes: string;
     hideEmail: boolean;
@@ -353,7 +353,7 @@ export function GmailDashboardSection({
 
     return submitReview(email, {
       company: email.company ?? "",
-      role: email.role ?? "",
+      position: email.role ?? "",
       status: "IGNORE",
       notes: email.notes ?? "",
       hideEmail: true,

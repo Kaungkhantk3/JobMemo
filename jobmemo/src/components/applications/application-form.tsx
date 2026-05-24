@@ -48,7 +48,7 @@ export function ApplicationForm({ open, onClose, editing }: Props) {
     if (editing) {
       setForm({
         company: editing.company,
-        position: editing.role ?? editing.position,
+        position: editing.position,
         jobUrl: editing.jobUrl ?? "",
         status: editing.currentStatus ?? editing.status,
         currentStatus: editing.currentStatus ?? editing.status,
@@ -105,7 +105,6 @@ export function ApplicationForm({ open, onClose, editing }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          role: form.position,
           currentStatus: form.status,
           source: form.source ?? "manual",
           appliedAt: form.appliedAt || null,

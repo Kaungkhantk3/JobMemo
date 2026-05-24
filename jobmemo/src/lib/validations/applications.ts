@@ -3,7 +3,6 @@ import { z } from "zod";
 export const applicationSchema = z.object({
   company: z.string().min(1, "Company is required"),
   position: z.string().min(1, "Position is required"),
-  role: z.string().optional(),
   jobUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
   notes: z.string().optional(),
   status: z.enum([

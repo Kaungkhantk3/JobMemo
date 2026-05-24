@@ -27,7 +27,7 @@ type ReviewRequestBody = {
   reviewed?: boolean;
   userCorrectedStatus?: GmailJobStatus | null;
   company?: string | null;
-  role?: string | null;
+  position?: string | null;
   status?: string | null;
   notes?: string | null;
   confidence?: number | null;
@@ -64,7 +64,7 @@ export async function PATCH(
       typeof body.reviewed === "boolean" ||
       body.userCorrectedStatus !== undefined ||
       body.company !== undefined ||
-      body.role !== undefined ||
+      body.position !== undefined ||
       body.status !== undefined ||
       body.notes !== undefined;
 
@@ -157,7 +157,7 @@ export async function PATCH(
           gmailMessageId: id,
           threadId: body.threadId ?? gmailMessage.data.threadId ?? null,
           company: body.company?.trim() || null,
-          role: body.role?.trim() || null,
+          role: body.position?.trim() || null,
           status: body.status ?? body.userCorrectedStatus ?? null,
           confidence: body.confidence ?? null,
           hidden: body.hidden ?? false,
@@ -181,8 +181,8 @@ export async function PATCH(
           ...(body.company !== undefined
             ? { company: body.company?.trim() || null }
             : {}),
-          ...(body.role !== undefined
-            ? { role: body.role?.trim() || null }
+          ...(body.position !== undefined
+            ? { role: body.position?.trim() || null }
             : {}),
           ...(body.status !== undefined ? { status: body.status } : {}),
           ...(body.confidence !== undefined
@@ -212,14 +212,18 @@ export async function PATCH(
         applicationStatus &&
         reviewStatus !== "IGNORE" &&
         (body.company?.trim() || existingReview?.company) &&
-        (body.role?.trim() || existingReview?.role)
+        (body.position?.trim() || existingReview?.role)
       ) {
         const company = (
           body.company?.trim() ||
           existingReview?.company ||
           ""
         ).trim();
-        const role = (body.role?.trim() || existingReview?.role || "").trim();
+        const position = (
+          body.position?.trim() ||
+          existingReview?.role ||
+          ""
+        ).trim();
         const appliedAt = body.emailDate ? new Date(body.emailDate) : null;
 
         const existingApplication = await tx.application.findFirst({
@@ -230,7 +234,7 @@ export async function PATCH(
               mode: "insensitive",
             },
             position: {
-              equals: role,
+              equals: position,
               mode: "insensitive",
             },
           },
@@ -238,8 +242,7 @@ export async function PATCH(
 
         const baseApplicationData = {
           company,
-          role,
-          position: role,
+          position,
           notes: body.notes?.trim() || existingApplication?.notes || null,
           status: applicationStatus,
           currentStatus: applicationStatus,
@@ -266,7 +269,7 @@ export async function PATCH(
             title: applicationEventTitleForStatus(
               applicationStatus,
               application.company,
-              application.role || application.position,
+              application.position,
             ),
             emailSubject: subject,
           },
@@ -281,7 +284,7 @@ export async function PATCH(
           },
           data: {
             company,
-            role,
+            role: position,
             status: reviewStatus ?? body.status ?? null,
             applicationId: application.id,
             syncedAt: new Date(),

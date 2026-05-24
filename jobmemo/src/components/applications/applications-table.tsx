@@ -46,9 +46,9 @@ export function ApplicationsTable({
 
   const filtered = applications.filter((a) => {
     const q = search.toLowerCase();
-    const role = a.role ?? a.position;
     return (
-      (a.company.toLowerCase().includes(q) || role.toLowerCase().includes(q)) &&
+      (a.company.toLowerCase().includes(q) ||
+        a.position.toLowerCase().includes(q)) &&
       (!statusFilter || (a.currentStatus ?? a.status) === statusFilter)
     );
   });
@@ -234,7 +234,7 @@ export function ApplicationsTable({
                     {app.company}
                   </p>
                   <p className="text-zinc-500 text-[12px] truncate mt-0.5">
-                    {app.role ?? app.position}
+                    {app.position}
                   </p>
                 </div>
                 <StatusBadge status={app.currentStatus ?? app.status} />
@@ -353,7 +353,7 @@ export function ApplicationsTable({
                     )}
                   </td>
                   <td className="px-3.5 py-3 text-zinc-700 truncate">
-                    {app.role ?? app.position}
+                    {app.position}
                   </td>
                   <td className="px-3.5 py-3">
                     <StatusBadge status={app.currentStatus ?? app.status} />
