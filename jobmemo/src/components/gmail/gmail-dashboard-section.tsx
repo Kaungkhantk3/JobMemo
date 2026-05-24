@@ -40,6 +40,7 @@ type EmailReview = {
   userCorrectedStatus?: GmailJobStatus | null;
   company?: string | null;
   role?: string | null;
+  position?: string | null;
   status?: string | null;
   confidence?: number | null;
   source?: string | null;
@@ -135,6 +136,7 @@ function buildReviewMap(emails: GmailMessage[]) {
         userCorrectedStatus: email.userCorrectedStatus ?? null,
         company: email.company ?? null,
         role: email.role ?? null,
+        position: email.role ?? null,
         status: email.status ?? null,
         confidence: email.confidence ?? null,
         source: email.source ?? null,
@@ -155,7 +157,7 @@ function applyReview(email: GmailMessage, review?: EmailReview) {
     userCorrectedStatus:
       review?.userCorrectedStatus ?? email.userCorrectedStatus ?? null,
     company: review?.company ?? email.company ?? null,
-    role: review?.role ?? email.role ?? null,
+    role: review?.position ?? review?.role ?? email.role ?? null,
     status: review?.status ?? email.status ?? null,
     confidence: review?.confidence ?? email.confidence ?? null,
     source: review?.source ?? email.source ?? null,
@@ -241,6 +243,7 @@ export function GmailDashboardSection({
       userCorrectedStatus: gmailStatusFromReviewDecision(payload.status),
       company: payload.company,
       role: payload.position,
+      position: payload.position,
       status: payload.status,
       confidence: email.confidence,
       source: "gmail",

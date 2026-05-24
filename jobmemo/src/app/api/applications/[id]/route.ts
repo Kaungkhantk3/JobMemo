@@ -23,9 +23,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
 
     const body = await req.json();
-    const nextStatus = normalizeApplicationStatus(
-      body.currentStatus ?? body.status,
-    );
+    const nextStatus = normalizeApplicationStatus(body.status);
 
     const existing = await prisma.application.findFirst({
       where: {
@@ -48,14 +46,12 @@ export async function PATCH(req: Request, context: RouteContext) {
         jobUrl: body.jobUrl || null,
         notes: body.notes || null,
         status: nextStatus ?? existing.status,
-        currentStatus: nextStatus ?? existing.currentStatus ?? existing.status,
         source: body.source ?? existing.source,
         appliedAt: body.appliedAt ? new Date(body.appliedAt) : null,
       },
     });
 
-    const statusChanged =
-      nextStatus !== null && nextStatus !== existing.currentStatus;
+    const statusChanged = nextStatus !== null && nextStatus !== existing.status;
 
     if (statusChanged) {
       await prisma.applicationEvent.create({

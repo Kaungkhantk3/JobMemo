@@ -45,16 +45,8 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    const {
-      company,
-      position,
-      jobUrl,
-      notes,
-      status,
-      currentStatus,
-      appliedAt,
-      source,
-    } = body;
+    const { company, position, jobUrl, notes, status, appliedAt, source } =
+      body;
 
     if (!company || !position) {
       return NextResponse.json(
@@ -63,8 +55,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const resolvedStatus =
-      normalizeApplicationStatus(currentStatus ?? status) ?? "APPLIED";
+    const resolvedStatus = normalizeApplicationStatus(status) ?? "APPLIED";
     const resolvedSource = typeof source === "string" ? source : "manual";
 
     const existingApplication = await prisma.application.findFirst({
@@ -95,7 +86,6 @@ export async function POST(req: Request) {
         jobUrl,
         notes,
         status: resolvedStatus,
-        currentStatus: resolvedStatus,
         source: resolvedSource,
         appliedAt: appliedAt ? new Date(appliedAt) : null,
         userId: session.user.id,

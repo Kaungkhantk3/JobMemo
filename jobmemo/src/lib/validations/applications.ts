@@ -14,17 +14,6 @@ export const applicationSchema = z.object({
     "OFFER",
     "GHOSTED",
   ]),
-  currentStatus: z
-    .enum([
-      "SAVED",
-      "APPLIED",
-      "INTERVIEW",
-      "ASSESSMENT",
-      "REJECTED",
-      "OFFER",
-      "GHOSTED",
-    ])
-    .optional(),
   source: z.string().optional(),
   appliedAt: z.string().optional().or(z.literal("")),
 });

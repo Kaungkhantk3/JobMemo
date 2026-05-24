@@ -69,7 +69,8 @@ export function GmailReviewModal({
             Confirm the tracked application
           </h2>
           <p className="mt-1 text-[13px] leading-6 text-zinc-600">
-            Review the detected company, role, and status before JobMemo creates or updates the application record.
+            Review the detected company, role, and status before JobMemo creates
+            or updates the application record.
           </p>
         </div>
 
@@ -82,7 +83,8 @@ export function GmailReviewModal({
               {email.subject || "(No subject)"}
             </p>
             <p className="mt-1 text-[12px] text-zinc-500">
-              {email.company ?? "Unknown company"} · {email.role ?? "Role not detected"}
+              {email.company ?? "Unknown company"} ·{" "}
+              {email.role ?? "Role not detected"}
             </p>
           </div>
 

@@ -245,7 +245,6 @@ export async function PATCH(
           position,
           notes: body.notes?.trim() || existingApplication?.notes || null,
           status: applicationStatus,
-          currentStatus: applicationStatus,
           source: existingApplication?.source ?? "gmail",
           appliedAt: existingApplication?.appliedAt ?? appliedAt,
           userId: session.user.id,

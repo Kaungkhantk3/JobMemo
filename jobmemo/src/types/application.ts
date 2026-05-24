@@ -13,7 +13,6 @@ export interface Application {
   position: string;
   jobUrl?: string | null;
   status: ApplicationStatus;
-  currentStatus?: ApplicationStatus;
   source?: string | null;
   notes?: string | null;
   appliedAt?: string | null;
@@ -35,7 +34,6 @@ export interface CreateApplicationInput {
   position: string;
   jobUrl?: string;
   status: ApplicationStatus;
-  currentStatus?: ApplicationStatus;
   source?: string;
   notes?: string;
   appliedAt?: string;

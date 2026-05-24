@@ -49,21 +49,17 @@ export function ApplicationsTable({
     return (
       (a.company.toLowerCase().includes(q) ||
         a.position.toLowerCase().includes(q)) &&
-      (!statusFilter || (a.currentStatus ?? a.status) === statusFilter)
+      (!statusFilter || a.status === statusFilter)
     );
   });
 
   const total = applications.length;
   const interviews = applications.filter(
-    (a) => (a.currentStatus ?? a.status) === "INTERVIEW",
+    (a) => a.status === "INTERVIEW",
   ).length;
-  const offers = applications.filter(
-    (a) => (a.currentStatus ?? a.status) === "OFFER",
-  ).length;
+  const offers = applications.filter((a) => a.status === "OFFER").length;
   const pending = applications.filter(
-    (a) =>
-      (a.currentStatus ?? a.status) === "APPLIED" ||
-      (a.currentStatus ?? a.status) === "GHOSTED",
+    (a) => a.status === "APPLIED" || a.status === "GHOSTED",
   ).length;
   const interviewRate = total ? Math.round((interviews / total) * 100) : 0;
 
@@ -237,7 +233,7 @@ export function ApplicationsTable({
                     {app.position}
                   </p>
                 </div>
-                <StatusBadge status={app.currentStatus ?? app.status} />
+                <StatusBadge status={app.status} />
               </div>
               <div className="flex items-center justify-between mt-2.5">
                 <div className="text-[11px] text-zinc-400 space-y-0.5">
@@ -356,7 +352,7 @@ export function ApplicationsTable({
                     {app.position}
                   </td>
                   <td className="px-3.5 py-3">
-                    <StatusBadge status={app.currentStatus ?? app.status} />
+                    <StatusBadge status={app.status} />
                   </td>
                   <td className="px-3.5 py-3 text-zinc-400 text-[12px]">
                     {fmtDate(app.appliedAt)}

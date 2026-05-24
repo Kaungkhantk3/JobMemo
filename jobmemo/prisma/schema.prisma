@@ -25,7 +25,6 @@ model Application {
   jobUrl        String?
   notes         String?
   status        ApplicationStatus @default(SAVED)
-  currentStatus ApplicationStatus @default(SAVED)
   source        String            @default("manual")
   appliedAt     DateTime?
   createdAt     DateTime          @default(now())
@@ -37,7 +36,7 @@ model Application {
   gmailEmailReviews GmailEmailReview[]
 
   @@unique([userId, company, position])
-  @@index([userId, currentStatus])
+  @@index([userId, status])
 }
 
 model ApplicationEvent {
