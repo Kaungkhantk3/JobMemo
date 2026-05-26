@@ -34,6 +34,16 @@ function formatEmailDate(dateString: string) {
   }).format(date);
 }
 
+function truncatePreview(text: string, maxLength = 140) {
+  const compact = text.replace(/\s+/g, " ").trim();
+
+  if (compact.length <= maxLength) {
+    return compact;
+  }
+
+  return `${compact.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
 function statusLabel(
   status?: GmailMessage["applicationState"] | GmailMessage["status"],
 ) {
@@ -214,7 +224,7 @@ export function GmailEmailList({
       </div>
 
       <div className="border-t border-zinc-100">
-        <div className="max-h-[520px] divide-y divide-zinc-100 overflow-y-auto">
+        <div className="max-h-130 divide-y divide-zinc-100 overflow-y-auto">
           {visibleEmails.map((email) => {
             const resolvedStatus = getResolvedEmailStatus(email);
             const badgeLabel = isNeedsReviewEmail(email)
@@ -241,11 +251,11 @@ export function GmailEmailList({
                     <p className="mt-1 text-[14px] font-medium text-zinc-700">
                       {email.role ?? "Role not detected"}
                     </p>
-                    <p className="mt-2 text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
+                    <p className="mt-2 line-clamp-1 text-[16px] font-semibold text-zinc-950 group-hover:text-zinc-900">
                       {email.subject ?? "(No subject)"}
                     </p>
-                    <p className="mt-2 text-[13px] text-zinc-700 line-clamp-2">
-                      {email.snippet ?? ""}
+                    <p className="mt-2 line-clamp-2 text-[13px] text-zinc-700">
+                      {truncatePreview(email.snippet ?? "")}
                     </p>
                   </div>
 
@@ -290,7 +300,7 @@ export function GmailEmailList({
               onClick={() => setVisibleCount((count) => count + 10)}
               className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-3.5 py-2 text-[12px] font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50"
             >
-              Show more
+              Load more
             </button>
           ) : null}
         </div>

@@ -593,7 +593,7 @@ async function fetchJobEmails(
       const headers = payload?.headers;
       const subject = getHeaderValue(headers, "Subject") || "No subject";
       const from = getHeaderValue(headers, "From") || "Unknown sender";
-      const snippet = messageResponse.data.snippet ?? "";
+      const snippet = (messageResponse.data.snippet ?? "").slice(0, 160);
       const classification = classifyJobEmail({
         subject,
         from,

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 
@@ -7,8 +8,17 @@ import type { Application } from "@/types/application";
 import type { GmailMessage } from "@/types/gmail";
 
 import { ConnectGmailButton } from "./connect-gmail-button";
-import { GmailDashboardSection } from "./gmail-dashboard-section";
 import { GmailSyncSkeleton } from "./gmail-sync-skeleton";
+
+const GmailDashboardSection = dynamic(
+  () =>
+    import("./gmail-dashboard-section").then(
+      (module) => module.GmailDashboardSection,
+    ),
+  {
+    loading: () => <GmailSyncSkeleton showStatusSkeleton={false} />,
+  },
+);
 
 type GmailSyncResponse = {
   inboxEmails?: GmailMessage[];
