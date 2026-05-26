@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ApplicationsTable } from "@/components/applications/applications-table";
 import { mergeApplicationRecords } from "@/lib/applications";
@@ -13,6 +13,10 @@ export function DashboardContent({
   applications: Application[];
 }) {
   const [applications, setApplications] = useState(initialApplications);
+
+  useEffect(() => {
+    console.log("DashboardClient mounted", performance.now());
+  }, []);
 
   function upsertApplication(application: Application) {
     setApplications((current) => mergeApplicationRecords(current, application));

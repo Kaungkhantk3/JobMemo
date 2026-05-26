@@ -453,9 +453,9 @@ export function GmailDashboardSection({
               <Sparkles className="h-3.5 w-3.5" />
               Gmail dashboard
             </div>
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
               Job emails and follow-up status
-            </h1>
+            </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 md:text-[15px]">
               Recent job-related Gmail messages, grouped by company, role, and
               status.

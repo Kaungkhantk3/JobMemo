@@ -24,9 +24,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-linear-to-br from-zinc-50 to-white">
-      <div className="hidden md:flex items-center border-b border-zinc-200/80 bg-white/70 px-6 py-3.5 backdrop-blur">
-        <h1 className="text-[15px] font-medium text-zinc-900">Dashboard</h1>
-      </div>
+      <header className="shrink-0 border-b border-zinc-200/80 bg-white/70 px-3 py-4 backdrop-blur md:px-6 md:py-4">
+        <h1 className="text-[20px] font-semibold tracking-tight text-zinc-950 md:text-[24px]">
+          Dashboard
+        </h1>
+      </header>
 
       <div className="flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-5">
         <DashboardContent

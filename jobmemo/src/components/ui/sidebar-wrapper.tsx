@@ -93,14 +93,14 @@ function Sidebar({
     <aside className="w-55 shrink-0 bg-[#0f1117] flex flex-col h-full">
       <div className="px-4 py-5 border-b border-white/8">
         <div className="flex items-center justify-between gap-3 min-w-0">
-          <div className="px-4 py-2">
+          <div className="h-10 w-34.5 shrink-0">
             <Image
               src="/logo.png"
               alt="JobMemo Logo"
               width={138}
               height={40}
               priority
-              className="h-auto w-auto object-contain"
+              className="h-10 w-34.5 object-contain"
             />
           </div>
 

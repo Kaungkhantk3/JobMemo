@@ -89,6 +89,10 @@ export default function GmailSyncClient({
     [reviewsMeta?.lastSyncAtLabel],
   );
 
+  useEffect(() => {
+    console.log("GmailSyncClient mounted", performance.now());
+  }, []);
+
   const refreshReviewsCache = useCallback(async () => {
     const response = await fetch("/api/gmail/reviews", {
       cache: "no-store",

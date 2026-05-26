@@ -1,9 +1,11 @@
 export default function DashboardLoading() {
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-zinc-50">
-      <div className="hidden border-b border-zinc-200 bg-white px-6 py-3.5 md:flex">
-        <div className="h-5 w-36 animate-pulse rounded bg-zinc-200" />
-      </div>
+    <div className="flex h-full flex-col overflow-hidden bg-linear-to-br from-zinc-50 to-white">
+      <header className="shrink-0 border-b border-zinc-200/80 bg-white/70 px-3 py-4 backdrop-blur md:px-6 md:py-4">
+        <h1 className="text-[20px] font-semibold tracking-tight text-zinc-950 md:text-[24px]">
+          Dashboard
+        </h1>
+      </header>
 
       <div className="flex-1 overflow-y-auto px-3 py-4 md:px-6 md:py-5">
         <div className="space-y-4">
