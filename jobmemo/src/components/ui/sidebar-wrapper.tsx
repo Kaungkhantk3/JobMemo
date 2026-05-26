@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -42,11 +42,11 @@ function NavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-all duration-200
+      className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors duration-200
         ${
           active
             ? "bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-            : "text-white/55 hover:-translate-y-0.5 hover:bg-white/6 hover:text-white"
+            : "text-white/55 hover:bg-white/6 hover:text-white"
         }`}
     >
       <Icon className="h-4 w-4 shrink-0 text-current opacity-85 transition-transform duration-200 group-hover:scale-105" />
@@ -68,6 +68,7 @@ function Sidebar({
   user: SidebarUser;
   showClose?: boolean;
 }) {
+  const [mounted, setMounted] = useState(false);
   const displayName = user.name ?? "Signed in user";
   const displayEmail = user.email ?? "";
   const initials = (user.name ?? user.email ?? "U")
@@ -77,6 +78,16 @@ function Sidebar({
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setMounted(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const showProfileText = mounted;
 
   return (
     <aside className="w-55 shrink-0 bg-[#0f1117] flex flex-col h-full">
@@ -147,15 +158,16 @@ function Sidebar({
       </nav>
 
       <div className="px-4 py-4 border-t border-white/8">
-        <div className="mb-3 flex items-center gap-2.5 rounded-xl bg-white/[0.03] px-3 py-2">
+        <div className="mb-3 flex items-center gap-2.5 rounded-xl bg-white/3 px-3 py-2">
           <UserCircle className="h-4 w-4 shrink-0 text-white/55" />
-          <div className="w-7 h-7 rounded-full bg-[#378ADD] flex items-center justify-center text-[11px] font-medium text-white shrink-0 overflow-hidden">
-            {user.image ? (
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#378ADD] text-[11px] font-medium text-white">
+            {mounted && user.image ? (
               <Image
                 src={user.image}
                 alt={displayName}
                 width={28}
                 height={28}
+                loading="lazy"
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -163,14 +175,23 @@ function Sidebar({
             )}
           </div>
           <div className="min-w-0">
-            <span className="block text-white/85 text-[12px] truncate">
-              {displayName}
-            </span>
-            {displayEmail ? (
-              <span className="block text-white/50 text-[11px] truncate">
-                {displayEmail}
-              </span>
-            ) : null}
+            {showProfileText ? (
+              <>
+                <span className="block text-white/85 text-[12px] truncate">
+                  {displayName}
+                </span>
+                {displayEmail ? (
+                  <span className="block text-white/50 text-[11px] truncate">
+                    {displayEmail}
+                  </span>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <div className="h-3 w-24 rounded bg-white/10 animate-pulse" />
+                <div className="mt-1 h-3 w-32 rounded bg-white/5 animate-pulse" />
+              </>
+            )}
           </div>
         </div>
 
@@ -178,7 +199,7 @@ function Sidebar({
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-[13px] text-white/70 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-[13px] text-white/70 transition-colors duration-200 hover:bg-white/10 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
             Logout
