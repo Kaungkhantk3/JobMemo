@@ -23,16 +23,13 @@ function hasGmailScope(scope?: string | null) {
 export function GmailStatusCard({
   user,
   account,
-  hasAccessToken = false,
   gmailVerified = false,
 }: {
   user: GmailUser;
   account: GmailAccount;
-  hasAccessToken?: boolean;
   gmailVerified?: boolean;
 }) {
-  const gmailConnected =
-    gmailVerified || (hasGmailScope(account?.scope) && hasAccessToken);
+  const gmailConnected = gmailVerified || hasGmailScope(account?.scope);
   const googleConnected = !!account;
   const needsReconnect = googleConnected && !gmailConnected;
 

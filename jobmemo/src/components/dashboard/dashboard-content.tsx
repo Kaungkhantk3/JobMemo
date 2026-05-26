@@ -1,28 +1,24 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { ApplicationsTable } from "@/components/applications/applications-table";
 import { mergeApplicationRecords } from "@/lib/applications";
 import type { Application } from "@/types/application";
-import type { GmailMessage } from "@/types/gmail";
+import { GmailSyncSkeleton } from "@/components/gmail/gmail-sync-skeleton";
 
-import { GmailDashboardSection } from "@/components/gmail/gmail-dashboard-section";
+const GmailSyncClient = dynamic(
+  () => import("@/components/gmail/gmail-sync-client"),
+  {
+    loading: () => <GmailSyncSkeleton showStatusSkeleton />,
+  },
+);
 
 export function DashboardContent({
   applications: initialApplications,
-  inboxEmails,
-  sentEmails,
-  inboxError,
-  sentError,
-  syncedAtLabel,
 }: {
   applications: Application[];
-  inboxEmails: GmailMessage[];
-  sentEmails: GmailMessage[];
-  inboxError?: string;
-  sentError?: string;
-  syncedAtLabel: string;
 }) {
   const [applications, setApplications] = useState(initialApplications);
 
@@ -32,14 +28,7 @@ export function DashboardContent({
 
   return (
     <div className="space-y-4">
-      <GmailDashboardSection
-        inboxEmails={inboxEmails}
-        sentEmails={sentEmails}
-        inboxError={inboxError}
-        sentError={sentError}
-        syncedAtLabel={syncedAtLabel}
-        onApplicationTracked={upsertApplication}
-      />
+      <GmailSyncClient onApplicationTracked={upsertApplication} />
 
       <ApplicationsTable applications={applications} />
     </div>

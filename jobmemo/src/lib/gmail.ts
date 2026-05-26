@@ -550,7 +550,7 @@ function normalizeApplicationState(
 }
 
 async function fetchJobEmails(
-  accessToken: string,
+  accessToken: string | null | undefined,
   refreshToken: string | null | undefined,
   mailbox: GmailMailboxKind,
 ) {
@@ -639,7 +639,7 @@ async function fetchJobEmails(
 
 const cachedGetRecentJobEmails = unstable_cache(
   async (
-    accessToken: string,
+    accessToken: string | null | undefined,
     refreshToken: string | null | undefined,
     mailbox: GmailMailboxKind,
   ) => fetchJobEmails(accessToken, refreshToken, mailbox),
@@ -650,7 +650,7 @@ const cachedGetRecentJobEmails = unstable_cache(
 );
 
 export async function getRecentJobEmails(
-  accessToken: string,
+  accessToken?: string | null,
   refreshToken?: string | null,
   mailbox: GmailMailboxKind = "INBOX_ACTIVITY",
 ) {
@@ -658,7 +658,7 @@ export async function getRecentJobEmails(
 }
 
 export async function getSentApplicationEmails(
-  accessToken: string,
+  accessToken?: string | null,
   refreshToken?: string | null,
 ) {
   return cachedGetRecentJobEmails(
