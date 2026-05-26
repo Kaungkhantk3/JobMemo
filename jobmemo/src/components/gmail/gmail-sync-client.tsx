@@ -1,24 +1,14 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 
 import type { Application } from "@/types/application";
 import type { GmailMessage } from "@/types/gmail";
 
 import { ConnectGmailButton } from "./connect-gmail-button";
-import { GmailSyncSkeleton } from "./gmail-sync-skeleton";
-
-const GmailDashboardSection = dynamic(
-  () =>
-    import("./gmail-dashboard-section").then(
-      (module) => module.GmailDashboardSection,
-    ),
-  {
-    loading: () => <GmailSyncSkeleton showStatusSkeleton={false} />,
-  },
-);
+import { GmailDashboardSection } from "./gmail-dashboard-section";
+import GmailSyncSkeleton from "./gmail-sync-skeleton";
 
 type GmailSyncResponse = {
   inboxEmails?: GmailMessage[];
@@ -26,6 +16,15 @@ type GmailSyncResponse = {
   inboxError?: string;
   sentError?: string;
   syncedAtLabel?: string;
+  error?: string;
+};
+
+type GmailReviewsResponse = {
+  canSync?: boolean;
+  reviewCount?: number;
+  lastSyncAt?: string | null;
+  lastSyncAtLabel?: string;
+  shouldAutoSync?: boolean;
   error?: string;
 };
 
@@ -76,28 +75,91 @@ export default function GmailSyncClient({
   onApplicationTracked?: (application: Application) => void;
   showStatusSkeleton?: boolean;
 }) {
-  const [data, setData] = useState<GmailSyncResponse | null>(null);
+  const [syncData, setSyncData] = useState<GmailSyncResponse | null>(null);
+  const [reviewsMeta, setReviewsMeta] = useState<GmailReviewsResponse | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [bootstrapping, setBootstrapping] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [autoSyncAttempted, setAutoSyncAttempted] = useState(false);
+
+  const lastSyncAtLabel = useMemo(
+    () => reviewsMeta?.lastSyncAtLabel ?? "Never synced",
+    [reviewsMeta?.lastSyncAtLabel],
+  );
+
+  const refreshReviewsCache = useCallback(async () => {
+    const response = await fetch("/api/gmail/reviews", {
+      cache: "no-store",
+    });
+
+    const payload = (await response
+      .json()
+      .catch(() => ({}))) as GmailReviewsResponse;
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Unable to load Gmail cache.");
+    }
+
+    setReviewsMeta(payload);
+    return payload;
+  }, []);
+
+  const runSync = useCallback(async () => {
+    if (syncing) {
+      return;
+    }
+
+    setSyncing(true);
+
+    try {
+      const response = await fetch("/api/gmail/sync", {
+        cache: "no-store",
+      });
+
+      const payload = (await response
+        .json()
+        .catch(() => ({}))) as GmailSyncResponse;
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to sync Gmail messages.");
+      }
+
+      setSyncData(payload);
+      await refreshReviewsCache();
+      setError(null);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Unable to sync Gmail messages.",
+      );
+    } finally {
+      setSyncing(false);
+      setBootstrapping(false);
+    }
+  }, [refreshReviewsCache, syncing]);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    async function loadGmailSync() {
+    async function bootstrap() {
       try {
-        const response = await fetch("/api/gmail/sync", {
+        const response = await fetch("/api/gmail/reviews", {
+          cache: "no-store",
           signal: controller.signal,
         });
 
         const payload = (await response
           .json()
-          .catch(() => ({}))) as GmailSyncResponse;
+          .catch(() => ({}))) as GmailReviewsResponse;
 
         if (!response.ok) {
-          throw new Error(payload.error || "Unable to load Gmail messages.");
+          throw new Error(payload.error || "Unable to load Gmail cache.");
         }
 
-        setData(payload);
+        setReviewsMeta(payload);
         setError(null);
       } catch (loadError) {
         if (controller.signal.aborted) {
@@ -107,37 +169,63 @@ export default function GmailSyncClient({
         setError(
           loadError instanceof Error
             ? loadError.message
-            : "Unable to load Gmail messages.",
+            : "Unable to load Gmail cache.",
         );
       } finally {
         if (!controller.signal.aborted) {
-          setLoading(false);
+          setBootstrapping(false);
         }
       }
     }
 
-    void loadGmailSync();
+    void bootstrap();
 
     return () => controller.abort();
   }, []);
 
-  if (loading) {
-    return <GmailSyncSkeleton showStatusSkeleton={showStatusSkeleton} />;
-  }
+  useEffect(() => {
+    if (!reviewsMeta) {
+      return;
+    }
 
-  if (error || !data) {
+    if (autoSyncAttempted || syncing) {
+      return;
+    }
+
+    if (!reviewsMeta.canSync || reviewsMeta.shouldAutoSync === false) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setAutoSyncAttempted(true);
+      void runSync();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [autoSyncAttempted, reviewsMeta, runSync, syncing]);
+
+  const loading = bootstrapping || (syncing && !syncData);
+
+  if (error && !syncData && !reviewsMeta) {
     return (
       <GmailSyncError message={error || "Unable to load Gmail messages."} />
     );
   }
 
+  if (loading) {
+    return <GmailSyncSkeleton showStatusSkeleton={showStatusSkeleton} />;
+  }
+
   return (
     <GmailDashboardSection
-      inboxEmails={data.inboxEmails ?? []}
-      sentEmails={data.sentEmails ?? []}
-      inboxError={data.inboxError}
-      sentError={data.sentError}
-      syncedAtLabel={data.syncedAtLabel ?? "just now"}
+      inboxEmails={syncData?.inboxEmails ?? []}
+      sentEmails={syncData?.sentEmails ?? []}
+      inboxError={syncData?.inboxError ?? error ?? undefined}
+      sentError={syncData?.sentError ?? error ?? undefined}
+      syncedAtLabel={syncData?.syncedAtLabel ?? lastSyncAtLabel}
+      loading={loading}
+      syncing={syncing}
+      onSyncGmail={runSync}
       onApplicationTracked={onApplicationTracked}
     />
   );

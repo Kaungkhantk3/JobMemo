@@ -73,35 +73,77 @@ export async function GET() {
       account.refresh_token,
     );
 
-    await gmail.users.getProfile({ userId: "me" });
+    const syncWork = async () => {
+      await gmail.users.getProfile({ userId: "me" });
 
-    const [inboxEmails, sentEmails, reviewRows] = await Promise.all([
-      getRecentJobEmails(
-        account.access_token,
-        account.refresh_token,
-        "INBOX_ACTIVITY",
-      ),
-      getSentApplicationEmails(account.access_token, account.refresh_token),
-      prisma.gmailEmailReview.findMany({
+      const existingReviews = await prisma.gmailEmailReview.findMany({
         where: {
           userId: session.user.id,
         },
         select: {
           gmailMessageId: true,
-          hidden: true,
-          reviewed: true,
-          userCorrectedStatus: true,
         },
-      }),
-    ]);
+      });
 
-    return NextResponse.json({
-      inboxEmails: mergeEmailReviews(inboxEmails, reviewRows),
-      sentEmails: mergeEmailReviews(sentEmails, reviewRows),
-      inboxError: undefined,
-      sentError: undefined,
-      syncedAtLabel: "just now",
+      const skippedIdsKey = existingReviews
+        .map((review) => review.gmailMessageId)
+        .join(",");
+
+      const [inboxEmails, sentEmails, reviewRows] = await Promise.all([
+        getRecentJobEmails(
+          account.access_token,
+          account.refresh_token,
+          "INBOX_ACTIVITY",
+          15,
+          skippedIdsKey,
+        ),
+        getSentApplicationEmails(
+          account.access_token,
+          account.refresh_token,
+          15,
+          skippedIdsKey,
+        ),
+        prisma.gmailEmailReview.findMany({
+          where: {
+            userId: session.user.id,
+          },
+          select: {
+            gmailMessageId: true,
+            hidden: true,
+            reviewed: true,
+            userCorrectedStatus: true,
+          },
+        }),
+      ]);
+
+      return {
+        inboxEmails: mergeEmailReviews(inboxEmails, reviewRows),
+        sentEmails: mergeEmailReviews(sentEmails, reviewRows),
+        inboxError: undefined,
+        sentError: undefined,
+        syncedAtLabel: "just now",
+      };
+    };
+
+    const timeoutMs = 9000;
+    const timeoutPromise = new Promise<{ timedOut: true }>((resolve) => {
+      setTimeout(() => resolve({ timedOut: true }), timeoutMs);
     });
+
+    const result = await Promise.race([syncWork(), timeoutPromise]);
+
+    if ("timedOut" in result) {
+      return NextResponse.json({
+        inboxEmails: [],
+        sentEmails: [],
+        inboxError: "Sync is still running. Try again in a moment.",
+        sentError: "Sync is still running. Try again in a moment.",
+        syncedAtLabel: "just now",
+        timedOut: true,
+      });
+    }
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error(error);
 

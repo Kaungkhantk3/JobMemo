@@ -10,6 +10,7 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   SearchX,
+  RefreshCcw,
 } from "lucide-react";
 
 import type {
@@ -168,6 +169,9 @@ export function GmailDashboardSection({
   inboxError,
   sentError,
   syncedAtLabel = "just now",
+  loading = false,
+  syncing = false,
+  onSyncGmail,
   onApplicationTracked,
 }: {
   inboxEmails: GmailMessage[];
@@ -175,6 +179,9 @@ export function GmailDashboardSection({
   inboxError?: string;
   sentError?: string;
   syncedAtLabel?: string;
+  loading?: boolean;
+  syncing?: boolean;
+  onSyncGmail?: () => void | Promise<void>;
   onApplicationTracked?: (application: Application) => void;
 }) {
   const [activeView, setActiveView] = useState<ActiveView>("INBOX_ACTIVITY");
@@ -393,6 +400,50 @@ export function GmailDashboardSection({
         ? "Emails that need your confirmation before JobMemo can track them accurately."
         : descriptionForMailbox("INBOX_ACTIVITY");
 
+  function renderLoadingGrid() {
+    return (
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="rounded-2xl border border-zinc-200/80 bg-white px-4 py-4 shadow-sm"
+          >
+            <div className="h-3 w-20 animate-pulse rounded bg-zinc-200" />
+            <div className="mt-3 h-8 w-14 animate-pulse rounded bg-zinc-200" />
+            <div className="mt-3 h-3 w-24 animate-pulse rounded bg-zinc-100" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function renderLoadingList() {
+    return (
+      <div className="rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
+        <div className="border-b border-zinc-200/80 px-5 py-5 md:px-6">
+          <div className="h-5 w-28 animate-pulse rounded-full bg-zinc-200" />
+          <div className="mt-4 h-8 w-72 max-w-full animate-pulse rounded bg-zinc-200" />
+          <div className="mt-3 h-4 w-full max-w-2xl animate-pulse rounded bg-zinc-100" />
+        </div>
+        <div className="divide-y divide-zinc-100">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="px-5 py-4 md:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div className="h-3 w-36 animate-pulse rounded bg-zinc-200" />
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-zinc-200" />
+                  <div className="h-4 w-full animate-pulse rounded bg-zinc-100" />
+                  <div className="h-4 w-5/6 animate-pulse rounded bg-zinc-100" />
+                </div>
+                <div className="h-3 w-20 animate-pulse rounded bg-zinc-200" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
       <div className="border-b border-zinc-200/80 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
@@ -436,6 +487,19 @@ export function GmailDashboardSection({
             <SearchX className="h-3.5 w-3.5" />
             {activeNeedsReviewEmails.length} needs review
           </span>
+          {onSyncGmail ? (
+            <button
+              type="button"
+              onClick={() => void onSyncGmail()}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCcw
+                className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
+              />
+              {syncing ? "Syncing..." : "Sync Gmail"}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -466,31 +530,37 @@ export function GmailDashboardSection({
       </div>
 
       <div className="p-5 md:p-6">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            label="Relevant emails"
-            value={activeStats.totalRelevant}
-            icon={BriefcaseBusiness}
-          />
-          <StatCard
-            label="Applied"
-            value={activeStats.applied}
-            icon={BadgeCheck}
-          />
-          <StatCard
-            label="Interviews"
-            value={activeStats.interviews}
-            icon={TrendingUp}
-          />
-          <StatCard
-            label="Needs review"
-            value={activeNeedsReviewEmails.length}
-            icon={SearchX}
-          />
-        </div>
+        {loading ? (
+          renderLoadingGrid()
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              label="Relevant emails"
+              value={activeStats.totalRelevant}
+              icon={BriefcaseBusiness}
+            />
+            <StatCard
+              label="Applied"
+              value={activeStats.applied}
+              icon={BadgeCheck}
+            />
+            <StatCard
+              label="Interviews"
+              value={activeStats.interviews}
+              icon={TrendingUp}
+            />
+            <StatCard
+              label="Needs review"
+              value={activeNeedsReviewEmails.length}
+              icon={SearchX}
+            />
+          </div>
+        )}
 
         <div className="mt-5">
-          {activeView === "NEEDS_REVIEW" ? (
+          {loading ? (
+            renderLoadingList()
+          ) : activeView === "NEEDS_REVIEW" ? (
             <section className="rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
               <div className="border-b border-zinc-200/80 px-5 py-4 md:px-6">
                 <div className="flex items-start justify-between gap-4">

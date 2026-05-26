@@ -1,19 +1,11 @@
 export const dynamic = "force-dynamic";
 
-import dynamicImport from "next/dynamic";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { GmailStatusCard } from "@/components/gmail/gmail-status-card";
-import { GmailSyncSkeleton } from "@/components/gmail/gmail-sync-skeleton";
-
-const GmailSyncClient = dynamicImport(
-  () => import("@/components/gmail/gmail-sync-client"),
-  {
-    loading: () => <GmailSyncSkeleton showStatusSkeleton={false} />,
-  },
-);
+import GmailSyncClient from "@/components/gmail/gmail-sync-client";
 
 export default async function GmailPage() {
   const session = await auth();

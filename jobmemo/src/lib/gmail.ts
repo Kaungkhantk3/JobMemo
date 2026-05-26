@@ -553,9 +553,12 @@ async function fetchJobEmails(
   accessToken: string | null | undefined,
   refreshToken: string | null | undefined,
   mailbox: GmailMailboxKind,
+  limit = 15,
+  skippedMessageIds: string[] = [],
 ) {
   const gmail = createGmailClient(accessToken, refreshToken);
   const query = mailbox === "APPLICATIONS_SENT" ? SENT_QUERY : INBOX_QUERY;
+  const skippedIds = new Set(skippedMessageIds);
 
   const messages: Array<{ id?: string | null; threadId?: string | null }> = [];
   let pageToken: string | undefined;
@@ -563,21 +566,29 @@ async function fetchJobEmails(
   do {
     const listResponse = await gmail.users.messages.list({
       userId: "me",
-      maxResults: 50,
+      maxResults: 15,
       q: query,
       pageToken,
     });
 
     messages.push(...(listResponse.data.messages ?? []));
     pageToken = listResponse.data.nextPageToken ?? undefined;
-  } while (pageToken && messages.length < 300);
+  } while (pageToken && messages.length < limit);
 
   if (messages.length === 0) {
     return [] as GmailMessage[];
   }
 
+  const uniqueMessages = messages
+    .filter((message) => message.id && !skippedIds.has(message.id))
+    .slice(0, limit);
+
+  if (uniqueMessages.length === 0) {
+    return [] as GmailMessage[];
+  }
+
   const detailedMessages = await Promise.all(
-    messages.map(async (message) => {
+    uniqueMessages.map(async (message) => {
       if (!message.id || !message.threadId) {
         return null;
       }
@@ -642,7 +653,16 @@ const cachedGetRecentJobEmails = unstable_cache(
     accessToken: string | null | undefined,
     refreshToken: string | null | undefined,
     mailbox: GmailMailboxKind,
-  ) => fetchJobEmails(accessToken, refreshToken, mailbox),
+    limit: number,
+    skippedMessageIdsKey: string,
+  ) =>
+    fetchJobEmails(
+      accessToken,
+      refreshToken,
+      mailbox,
+      limit,
+      skippedMessageIdsKey ? skippedMessageIdsKey.split(",") : [],
+    ),
   ["recent-job-emails"],
   {
     revalidate: 60,
@@ -653,17 +673,29 @@ export async function getRecentJobEmails(
   accessToken?: string | null,
   refreshToken?: string | null,
   mailbox: GmailMailboxKind = "INBOX_ACTIVITY",
+  limit = 15,
+  skippedMessageIdsKey = "",
 ) {
-  return cachedGetRecentJobEmails(accessToken, refreshToken, mailbox);
+  return cachedGetRecentJobEmails(
+    accessToken,
+    refreshToken,
+    mailbox,
+    limit,
+    skippedMessageIdsKey,
+  );
 }
 
 export async function getSentApplicationEmails(
   accessToken?: string | null,
   refreshToken?: string | null,
+  limit = 15,
+  skippedMessageIdsKey = "",
 ) {
   return cachedGetRecentJobEmails(
     accessToken,
     refreshToken,
     "APPLICATIONS_SENT",
+    limit,
+    skippedMessageIdsKey,
   );
 }
