@@ -35,10 +35,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async jwt({ token, account }) {
       if (account) {
-        console.log("JWT_ACCOUNT_SCOPE:", account.scope);
-        console.log("JWT_HAS_ACCESS:", !!account.access_token);
-        console.log("JWT_HAS_REFRESH:", !!account.refresh_token);
-
         const mutableToken = token as typeof token & {
           accessToken?: string | null;
           refreshToken?: string | null;
@@ -60,17 +56,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       return session;
-    },
-  },
-
-  events: {
-    async linkAccount(message) {
-      console.log("LINK_ACCOUNT", {
-        provider: message.account?.provider,
-        scope: message.account?.scope,
-        hasAccessToken: !!message.account?.access_token,
-        hasRefreshToken: !!message.account?.refresh_token,
-      });
     },
   },
 

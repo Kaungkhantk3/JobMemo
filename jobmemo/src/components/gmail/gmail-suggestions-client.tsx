@@ -280,7 +280,8 @@ export default function GmailSuggestionsClient({
               application?: Application | null;
               error?: string;
             } | null;
-            if (!res.ok) throw new Error(result?.error || "Failed to save review");
+            if (!res.ok)
+              throw new Error(result?.error || "Failed to save review");
             if (result?.application) onApplicationTracked?.(result.application);
             setSyncData((current) => {
               if (!current) return current;

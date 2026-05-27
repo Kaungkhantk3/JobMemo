@@ -1,43 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 
-import type { Application } from "@/types/application";
-import type { GmailMessage } from "@/types/gmail";
-
 import { ConnectGmailButton } from "./connect-gmail-button";
-import { GmailDashboardSection } from "./gmail-dashboard-section";
-import GmailSyncSkeleton from "./gmail-sync-skeleton";
-
-type GmailSyncResponse = {
-  inboxEmails?: GmailMessage[];
-  sentEmails?: GmailMessage[];
-  inboxError?: string;
-  sentError?: string;
-  syncedAtLabel?: string;
-  error?: string;
-};
 
 type GmailReviewsResponse = {
   canSync?: boolean;
   reviewCount?: number;
   lastSyncAt?: string | null;
   lastSyncAtLabel?: string;
-  shouldAutoSync?: boolean;
   error?: string;
 };
 
 function GmailSyncError({ message }: { message: string }) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
-      <div className="border-b border-zinc-200/80 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
+    <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+      <div className="border-b border-zinc-200 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
         <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
           <AlertTriangle className="h-3.5 w-3.5" />
           Gmail sync
         </div>
-        <h2 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
-          Gmail messages could not load
+        <h2 className="mt-4 text-lg font-semibold tracking-tight text-zinc-950 md:text-xl">
+          Gmail settings could not load
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 md:text-[15px]">
           JobMemo will keep the rest of the dashboard available while Gmail is
@@ -69,29 +54,17 @@ function GmailSyncError({ message }: { message: string }) {
 }
 
 export default function GmailSyncClient({
-  onApplicationTracked,
   showStatusSkeleton = true,
 }: {
-  onApplicationTracked?: (application: Application) => void;
   showStatusSkeleton?: boolean;
 }) {
-  const [syncData, setSyncData] = useState<GmailSyncResponse | null>(null);
   const [reviewsMeta, setReviewsMeta] = useState<GmailReviewsResponse | null>(
     null,
   );
   const [error, setError] = useState<string | null>(null);
-  const [bootstrapping, setBootstrapping] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [autoSyncAttempted, setAutoSyncAttempted] = useState(false);
 
-  const lastSyncAtLabel = useMemo(
-    () => reviewsMeta?.lastSyncAtLabel ?? "Never synced",
-    [reviewsMeta?.lastSyncAtLabel],
-  );
-
-  useEffect(() => {
-    console.log("GmailSyncClient mounted", performance.now());
-  }, []);
+  const lastSyncAtLabel = reviewsMeta?.lastSyncAtLabel ?? "Never synced";
 
   const refreshReviewsCache = useCallback(async () => {
     const response = await fetch("/api/gmail/reviews", {
@@ -122,15 +95,14 @@ export default function GmailSyncClient({
         cache: "no-store",
       });
 
-      const payload = (await response
-        .json()
-        .catch(() => ({}))) as GmailSyncResponse;
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
 
       if (!response.ok) {
         throw new Error(payload.error || "Unable to sync Gmail messages.");
       }
 
-      setSyncData(payload);
       await refreshReviewsCache();
       setError(null);
     } catch (loadError) {
@@ -141,7 +113,6 @@ export default function GmailSyncClient({
       );
     } finally {
       setSyncing(false);
-      setBootstrapping(false);
     }
   }, [refreshReviewsCache, syncing]);
 
@@ -175,10 +146,6 @@ export default function GmailSyncClient({
             ? loadError.message
             : "Unable to load Gmail cache.",
         );
-      } finally {
-        if (!controller.signal.aborted) {
-          setBootstrapping(false);
-        }
       }
     }
 
@@ -187,50 +154,86 @@ export default function GmailSyncClient({
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    if (!reviewsMeta) {
-      return;
-    }
-
-    if (autoSyncAttempted || syncing) {
-      return;
-    }
-
-    if (!reviewsMeta.canSync || reviewsMeta.shouldAutoSync === false) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setAutoSyncAttempted(true);
-      void runSync();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [autoSyncAttempted, reviewsMeta, runSync, syncing]);
-
-  const loading = bootstrapping || (syncing && !syncData);
-
-  if (error && !syncData && !reviewsMeta) {
+  if (error && !reviewsMeta) {
     return (
-      <GmailSyncError message={error || "Unable to load Gmail messages."} />
+      <GmailSyncError message={error || "Unable to load Gmail settings."} />
     );
   }
 
-  if (loading) {
-    return <GmailSyncSkeleton showStatusSkeleton={showStatusSkeleton} />;
+  if (!reviewsMeta && showStatusSkeleton) {
+    return (
+      <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+        <div className="px-5 py-5 md:px-6">
+          <div className="h-4 w-36 animate-pulse rounded bg-zinc-200" />
+          <div className="mt-4 h-6 w-56 animate-pulse rounded bg-zinc-200" />
+          <div className="mt-3 h-4 w-full max-w-2xl animate-pulse rounded bg-zinc-100" />
+        </div>
+      </section>
+    );
   }
 
   return (
-    <GmailDashboardSection
-      inboxEmails={syncData?.inboxEmails ?? []}
-      sentEmails={syncData?.sentEmails ?? []}
-      inboxError={syncData?.inboxError ?? error ?? undefined}
-      sentError={syncData?.sentError ?? error ?? undefined}
-      syncedAtLabel={syncData?.syncedAtLabel ?? lastSyncAtLabel}
-      loading={loading}
-      syncing={syncing}
-      onSyncGmail={runSync}
-      onApplicationTracked={onApplicationTracked}
-    />
+    <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+      <div className="border-b border-zinc-200 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-label-xs mb-2">Gmail sync</p>
+            <h2 className="text-heading-sm text-zinc-950 md:text-heading">
+              Gmail connection and sync status
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 md:text-[15px]">
+              Use Gmail read-only sync to refresh suggestions when you want to.
+            </p>
+          </div>
+          <div className="hidden rounded-2xl bg-zinc-900 p-3 text-white md:block">
+            <RefreshCcw className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
+            Last synced {lastSyncAtLabel}
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
+            {reviewsMeta?.reviewCount ?? 0} review records
+          </span>
+          <button
+            type="button"
+            onClick={() => void runSync()}
+            disabled={syncing || !reviewsMeta?.canSync}
+            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] font-medium text-zinc-700 shadow-sm transition-smooth hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw
+              className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
+            />
+            {syncing ? "Syncing..." : "Sync Gmail"}
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-4 px-5 py-5 md:px-6">
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 shadow-sm">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+            Gmail access
+          </p>
+          <p className="mt-2 text-sm leading-6 text-zinc-600">
+            JobMemo uses read-only Gmail access to detect job application
+            updates. We cannot send, delete, or modify your emails.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <ConnectGmailButton label="Connect Gmail" />
+          </div>
+        </div>
+
+        {error ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-900 shadow-sm">
+            <p className="font-medium">Unable to refresh Gmail metadata.</p>
+            <p className="mt-1 text-[13px] leading-6 text-amber-800/90">
+              {error}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </section>
   );
 }

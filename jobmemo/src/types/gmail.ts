@@ -47,3 +47,18 @@ export interface GmailMessage {
   notes?: string | null;
   applicationId?: string | null;
 }
+
+export interface GmailSuggestion {
+  id: string;
+  threadId?: string | null;
+  company?: string | null;
+  position?: string | null;
+  status?: string | null;
+  confidence?: number | null;
+  hidden?: boolean;
+  userCorrectedStatus?: GmailJobStatus | null;
+  reviewed?: boolean;
+  source?: string | null;
+  syncedAt?: string | null;
+  notes?: string | null;
+}

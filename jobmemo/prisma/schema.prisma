@@ -4,8 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 enum ApplicationStatus {
@@ -19,19 +17,19 @@ enum ApplicationStatus {
 }
 
 model Application {
-  id            String            @id @default(cuid())
-  company       String
-  position      String
-  jobUrl        String?
-  notes         String?
-  status        ApplicationStatus @default(SAVED)
-  appliedAt     DateTime?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id        String            @id @default(cuid())
+  company   String
+  position  String
+  jobUrl    String?
+  notes     String?
+  status    ApplicationStatus @default(SAVED)
+  appliedAt DateTime?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
-  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId   String
-  events   ApplicationEvent[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  events            ApplicationEvent[]
   gmailEmailReviews GmailEmailReview[]
 
   @@unique([userId, company, position])
@@ -39,12 +37,12 @@ model Application {
 }
 
 model ApplicationEvent {
-  id            String      @id @default(cuid())
-  applicationId  String
+  id            String   @id @default(cuid())
+  applicationId String
   type          String
   title         String
   emailSubject  String?
-  createdAt     DateTime    @default(now())
+  createdAt     DateTime @default(now())
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
@@ -58,9 +56,9 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  applications Application[]
-  accounts Account[]
-  sessions Session[]
+  applications      Application[]
+  accounts          Account[]
+  sessions          Session[]
   gmailEmailReviews GmailEmailReview[]
 
   createdAt DateTime @default(now())
@@ -68,22 +66,22 @@ model User {
 }
 
 model GmailEmailReview {
-  id                 String     @id @default(cuid())
+  id String @id @default(cuid())
 
-  userId             String
-  gmailMessageId     String
-  threadId           String?
-  company            String?
-  role               String?
-  status             String?
-  confidence         Int?
-  hidden             Boolean    @default(false)
+  userId              String
+  gmailMessageId      String
+  threadId            String?
+  company             String?
+  role                String?
+  status              String?
+  confidence          Int?
+  hidden              Boolean   @default(false)
   userCorrectedStatus String?
-  reviewed           Boolean    @default(false)
-  source             String     @default("gmail")
-  syncedAt           DateTime?
-  notes              String?
-  applicationId      String?
+  reviewed            Boolean   @default(false)
+  source              String    @default("gmail")
+  syncedAt            DateTime?
+  notes               String?
+  applicationId       String?
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
@@ -98,18 +96,18 @@ model GmailEmailReview {
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -127,7 +125,7 @@ model Session {
 
 model VerificationToken {
   identifier String
-  token      String @unique
+  token      String   @unique
   expires    DateTime
 
   @@unique([identifier, token])
