@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Eye, Mail, RefreshCcw } from "lucide-react";
+import { Eye, Mail } from "lucide-react";
 
 import type { Application } from "@/types/application";
 import type { DashboardApplication } from "@/types/dashboard";
@@ -46,53 +46,102 @@ function SuggestionsSkeleton() {
 
 export default function GmailSuggestionsPanel({
   onApplicationTracked,
+  syncSignal = 0,
+  limit = 8,
 }: {
   onApplicationTracked?: (application: DashboardApplication) => void;
+  syncSignal?: number;
+  limit?: number;
 }) {
   const [suggestions, setSuggestions] = useState<GmailSuggestion[] | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reviewingSuggestion, setReviewingSuggestion] =
     useState<GmailSuggestion | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const loadSuggestions = useCallback(async () => {
+  const loadSuggestions = useCallback(
+    async (quiet = false) => {
+      try {
+        if (quiet) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+
+        const response = await fetch(`/api/gmail/suggestions?limit=${limit}`, {
+          cache: "no-store",
+        });
+
+        const payload = (await response
+          .json()
+          .catch(() => ({}))) as SuggestionsResponse;
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Failed to load Gmail suggestions");
+        }
+
+        setSuggestions(payload.suggestions ?? []);
+        setError(null);
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load Gmail suggestions",
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [limit],
+  );
+
+  const syncSuggestions = useCallback(async () => {
+    if (syncing) {
+      return;
+    }
+
+    setSyncing(true);
+
     try {
-      const response = await fetch("/api/gmail/suggestions", {
+      const response = await fetch("/api/gmail/sync", {
         cache: "no-store",
       });
 
-      const payload = (await response
-        .json()
-        .catch(() => ({}))) as SuggestionsResponse;
-
       if (!response.ok) {
-        throw new Error(payload.error || "Failed to load Gmail suggestions");
+        const payload = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(payload.error || "Failed to sync Gmail");
       }
 
-      setSuggestions(payload.suggestions ?? []);
-      setError(null);
-    } catch (loadError) {
+      await loadSuggestions(true);
+    } catch (syncError) {
       setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Failed to load Gmail suggestions",
+        syncError instanceof Error ? syncError.message : "Failed to sync Gmail",
       );
     } finally {
-      setLoading(false);
+      setSyncing(false);
     }
-  }, []);
+  }, [loadSuggestions, syncing]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      void loadSuggestions();
+      if (syncSignal > 0) {
+        void syncSuggestions();
+        return;
+      }
+
+      void loadSuggestions(false);
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [loadSuggestions]);
+  }, [loadSuggestions, syncSignal, syncSuggestions]);
 
   const lastSynced = useMemo(() => {
     const latest = suggestions?.[0]?.syncedAt;
@@ -108,33 +157,6 @@ export default function GmailSuggestionsPanel({
       minute: "2-digit",
     }).format(date);
   }, [suggestions]);
-
-  async function syncSuggestions() {
-    if (syncing) return;
-
-    setSyncing(true);
-    try {
-      const response = await fetch("/api/gmail/sync", {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        throw new Error(payload.error || "Failed to sync Gmail");
-      }
-
-      await loadSuggestions();
-    } catch (syncError) {
-      setError(
-        syncError instanceof Error ? syncError.message : "Failed to sync Gmail",
-      );
-    } finally {
-      setSyncing(false);
-    }
-  }
 
   async function mutateSuggestion(
     suggestion: GmailSuggestion,
@@ -241,23 +263,16 @@ export default function GmailSuggestionsPanel({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="text-[12px] text-zinc-500">
-            Last synced {lastSynced}
-          </div>
-          <button
-            type="button"
-            onClick={() => void syncSuggestions()}
-            disabled={syncing}
-            className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] font-medium text-zinc-700 shadow-sm transition-smooth hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCcw
-              className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`}
-            />
-            Sync Gmail
-          </button>
+        <div className="text-[12px] text-zinc-500">
+          Last synced {lastSynced}
         </div>
       </div>
+
+      {syncing || refreshing ? (
+        <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-[13px] text-zinc-600">
+          {syncing ? "Syncing Gmail..." : "Refreshing Gmail suggestions..."}
+        </div>
+      ) : null}
 
       <div className="mt-4 space-y-3">
         {error ? (
@@ -332,8 +347,8 @@ export default function GmailSuggestionsPanel({
               No new Gmail suggestions.
             </p>
             <p className="mt-2 text-[13px] text-zinc-500">
-              Start by syncing Gmail or wait for new job-related mail to appear
-              here.
+              Start by syncing Gmail from the dashboard or wait for new
+              job-related mail to appear here.
             </p>
           </div>
         )}

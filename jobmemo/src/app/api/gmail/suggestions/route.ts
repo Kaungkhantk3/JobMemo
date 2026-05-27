@@ -3,13 +3,16 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await auth();
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const limit = new URL(request.url).searchParams.get("limit");
+    const safeLimit = Math.min(Math.max(Number(limit ?? "8") || 8, 1), 10);
 
     const suggestions = await prisma.gmailEmailReview.findMany({
       where: {
@@ -20,6 +23,7 @@ export async function GET() {
       orderBy: {
         syncedAt: "desc",
       },
+      take: safeLimit,
       select: {
         gmailMessageId: true,
         threadId: true,

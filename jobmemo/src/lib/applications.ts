@@ -124,3 +124,19 @@ export function mergeApplicationRecords<T extends { id: string }>(
 
   return current.map((item) => (item.id === incoming.id ? incoming : item));
 }
+
+export function summarizeApplicationStatuses(
+  applications: Array<{ status: ApplicationStatus }>,
+) {
+  return {
+    totalApplications: applications.length,
+    interviews: applications.filter(
+      (application) => application.status === "INTERVIEW",
+    ).length,
+    assessments: applications.filter(
+      (application) => application.status === "ASSESSMENT",
+    ).length,
+    offers: applications.filter((application) => application.status === "OFFER")
+      .length,
+  };
+}
