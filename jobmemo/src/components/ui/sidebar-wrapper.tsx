@@ -42,12 +42,13 @@ function NavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors duration-200
+      className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-body transition-smooth
         ${
           active
             ? "bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-            : "text-white/55 hover:bg-white/6 hover:text-white"
+            : "text-white/55 hover:bg-white/5 hover:text-white"
         }`}
+      aria-current={active ? "page" : undefined}
     >
       <Icon className="h-4 w-4 shrink-0 text-current opacity-85 transition-transform duration-200 group-hover:scale-105" />
       <span>{label}</span>
@@ -90,7 +91,7 @@ function Sidebar({
   const showProfileText = mounted;
 
   return (
-    <aside className="w-55 shrink-0 bg-[#0f1117] flex flex-col h-full">
+    <aside className="w-55 shrink-0 flex flex-col h-full" style={{ backgroundColor: "var(--color-sidebar-bg)" }}>
       <div className="px-4 py-5 border-b border-white/8">
         <div className="flex items-center justify-between gap-3 min-w-0">
           <div className="h-10 w-34.5 shrink-0">
@@ -108,12 +109,12 @@ function Sidebar({
             <button
               onClick={onClose}
               aria-label="Close menu"
-              className="text-white/40 hover:text-white transition-colors p-1 rounded shrink-0"
+              className="text-white/40 hover:text-white transition-colors p-2 rounded-lg shrink-0 hover:bg-white/5"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
+                width="20"
+                height="20"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -129,7 +130,7 @@ function Sidebar({
         </div>
       </div>
       <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-y-auto">
-        <p className="text-white/25 text-[10px] uppercase tracking-widest px-2.5 mb-1.5 mt-2">
+        <p className="text-white/25 text-label-sm uppercase px-2.5 mb-2 mt-3">
           Main
         </p>
         {navItems.map((item) => (
@@ -142,7 +143,7 @@ function Sidebar({
             onNavigate={onNavigate}
           />
         ))}
-        <p className="text-white/25 text-[10px] uppercase tracking-widest px-2.5 mb-1.5 mt-4">
+        <p className="text-white/25 text-label-sm uppercase px-2.5 mb-2 mt-4">
           More
         </p>
         {moreItems.map((item) => (
@@ -157,10 +158,10 @@ function Sidebar({
         ))}
       </nav>
 
-      <div className="px-4 py-4 border-t border-white/8">
-        <div className="mb-3 flex items-center gap-2.5 rounded-xl bg-white/3 px-3 py-2">
-          <UserCircle className="h-4 w-4 shrink-0 text-white/55" />
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#378ADD] text-[11px] font-medium text-white">
+      <div className="px-4 py-4 border-t border-white/8 space-y-4">
+        <div className="flex items-center gap-2.5 rounded-xl bg-white/5 px-3 py-2.5 hover:bg-white/8 transition-colors">
+          <UserCircle className="h-5 w-5 shrink-0 text-white/55" />
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#378ADD] text-body-xs font-medium text-white">
             {mounted && user.image ? (
               <Image
                 src={user.image}
@@ -177,11 +178,11 @@ function Sidebar({
           <div className="min-w-0">
             {showProfileText ? (
               <>
-                <span className="block text-white/85 text-[12px] truncate">
+                <span className="block text-white/85 text-body-sm font-medium truncate">
                   {displayName}
                 </span>
                 {displayEmail ? (
-                  <span className="block text-white/50 text-[11px] truncate">
+                  <span className="block text-white/50 text-body-xs truncate">
                     {displayEmail}
                   </span>
                 ) : null}
@@ -195,18 +196,16 @@ function Sidebar({
           </div>
         </div>
 
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-[13px] text-white/70 transition-colors duration-200 hover:bg-white/10 hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-white/5 px-3 py-2 text-body text-white/70 transition-smooth hover:bg-white/10 hover:text-white"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </button>
 
-        <div className="mt-4 flex items-center justify-between gap-3 text-[11px] text-white/40">
+        <div className="flex items-center justify-between gap-3 text-body-xs text-white/40 px-1">
           <Link
             href="/privacy"
             className="transition-colors hover:text-white/75"
@@ -247,14 +246,14 @@ export function SidebarWrapper({
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 md:hidden backdrop-blur-xs transition-opacity"
           onClick={() => setOpen(false)}
         />
       )}
 
-      {/* Mobile drawer — close button is inside the sidebar header */}
+      {/* Mobile drawer */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 md:hidden transition-transform duration-200
+        className={`fixed inset-y-0 left-0 z-50 md:hidden transition-transform duration-300
           ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <Sidebar
@@ -268,12 +267,12 @@ export function SidebarWrapper({
 
       {/* Main */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Mobile topbar — hamburger only, no overlapping X */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#0f1117] border-b border-white/8">
+        {/* Mobile topbar */}
+        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-white/8 transition-smooth" style={{ backgroundColor: "var(--color-sidebar-bg)" }}>
           <button
             onClick={() => setOpen(true)}
             aria-label="Open menu"
-            className="text-white/70 hover:text-white"
+            className="p-2 text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -291,7 +290,7 @@ export function SidebarWrapper({
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <span className="text-white text-[14px] font-medium">JobMemo</span>
+          <span className="text-white text-body font-semibold">JobMemo</span>
         </div>
 
         <main className="flex-1 overflow-hidden">{children}</main>

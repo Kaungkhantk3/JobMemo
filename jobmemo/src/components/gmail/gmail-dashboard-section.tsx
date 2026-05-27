@@ -61,18 +61,18 @@ function StatCard({
   icon: ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200/80 bg-white px-4 py-4 shadow-sm">
+    <div className="card-elevated">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+          <p className="text-label-xs mb-2">
             {label}
           </p>
-          <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
+          <p className="text-3xl md:text-4xl font-semibold tracking-tight text-zinc-950">
             {value}
           </p>
         </div>
-        <div className="rounded-xl bg-zinc-50 p-2.5 text-zinc-700">
-          <Icon className="h-4.5 w-4.5" />
+        <div className="rounded-lg bg-zinc-50 p-2.5 text-zinc-600">
+          <Icon className="h-5 w-5" />
         </div>
       </div>
     </div>
@@ -96,17 +96,17 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[12px] font-medium transition-colors ${
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-body-sm font-medium transition-smooth ${
         active
-          ? "border-zinc-900 bg-zinc-900 text-white"
+          ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
           : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
       }`}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="h-4 w-4" />
       {label}
       <span
-        className={`rounded-full px-2 py-0.5 text-[11px] ${
-          active ? "bg-white/15 text-white" : "bg-zinc-100 text-zinc-700"
+        className={`rounded-full px-2.5 py-0.5 text-label-xs font-semibold ${
+          active ? "bg-white/20 text-white" : "bg-zinc-100 text-zinc-700"
         }`}
       >
         {count}
@@ -529,11 +529,11 @@ export function GmailDashboardSection({
         </div>
       </div>
 
-      <div className="p-5 md:p-6">
+      <div className="px-5 py-6 md:px-6 space-y-6">
         {loading ? (
           renderLoadingGrid()
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid-cols-responsive-4 gap-4">
             <StatCard
               label="Relevant emails"
               value={activeStats.totalRelevant}
@@ -557,26 +557,26 @@ export function GmailDashboardSection({
           </div>
         )}
 
-        <div className="mt-5">
+        <div>
           {loading ? (
             renderLoadingList()
           ) : activeView === "NEEDS_REVIEW" ? (
-            <section className="rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
+            <section className="card-base border-zinc-200/80 shadow-sm">
               <div className="border-b border-zinc-200/80 px-5 py-4 md:px-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                    <p className="text-label-xs mb-2">
                       Needs review
                     </p>
-                    <h2 className="mt-2 text-[18px] font-semibold text-zinc-950">
+                    <h2 className="text-heading-sm md:text-heading text-zinc-950">
                       Emails that need your confirmation
                     </h2>
-                    <p className="mt-1 text-[13px] leading-6 text-zinc-600">
+                    <p className="mt-2 text-body text-zinc-600 leading-relaxed">
                       Low-confidence matches, incomplete metadata, or unclear
                       classifications are parked here for manual correction.
                     </p>
                   </div>
-                  <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] text-zinc-600 shadow-sm">
+                  <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-label-xs font-semibold text-zinc-600 shadow-sm whitespace-nowrap">
                     {activeNeedsReviewEmails.length}
                   </span>
                 </div>

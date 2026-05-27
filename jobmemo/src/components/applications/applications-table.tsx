@@ -113,7 +113,7 @@ export function ApplicationsTable({
   return (
     <>
       {/* Stats — 2 cols on mobile, 4 on desktop */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-2.5 mb-4 md:mb-5">
+      <div className="grid-cols-responsive-4 gap-3 mb-6 md:mb-8">
         {stats.map(
           ({
             label,
@@ -126,21 +126,21 @@ export function ApplicationsTable({
           }) => (
             <div
               key={label}
-              className="group rounded-2xl border border-zinc-200/80 bg-white px-3 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md md:px-4 md:py-3.5"
+              className="card-elevated"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[11px] text-zinc-400 mb-1">{label}</p>
+                  <p className="text-label-xs mb-2">{label}</p>
                   <p
-                    className={`text-[20px] md:text-[22px] font-medium leading-none ${valueColor ?? "text-zinc-900"}`}
+                    className={`text-2xl md:text-3xl font-semibold leading-none ${valueColor ?? "text-zinc-900"}`}
                   >
                     {value}
                   </p>
-                  <p className="text-[11px] text-zinc-400 mt-1">{sub}</p>
+                  <p className="text-label-xs mt-2">{sub}</p>
                 </div>
 
-                <div className={`rounded-xl p-2 ${iconBg}`}>
-                  <Icon className={`h-4.5 w-4.5 ${iconColor}`} />
+                <div className={`rounded-lg p-2.5 ${iconBg}`}>
+                  <Icon className={`h-5 w-5 ${iconColor}`} />
                 </div>
               </div>
             </div>
@@ -149,22 +149,22 @@ export function ApplicationsTable({
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
-            className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-8 pr-3 text-[13px] outline-none transition-shadow focus:border-zinc-300 focus:shadow-sm"
+            className="input-base pl-9"
             placeholder="Search company or position..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           {/* Filter */}
           <select
-            className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[13px] outline-none transition-shadow focus:border-zinc-300 focus:shadow-sm sm:flex-none"
+            className="input-base min-w-[150px] sm:min-w-[140px]"
             value={statusFilter}
             onChange={(e) =>
               setStatusFilter(e.target.value as ApplicationStatus | "")
@@ -184,7 +184,8 @@ export function ApplicationsTable({
               setEditing(null);
               setFormOpen(true);
             }}
-            className="flex items-center gap-2 rounded-lg bg-[#0f1117] px-3.5 py-2 text-[13px] font-medium text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#171a22] hover:shadow-md whitespace-nowrap"
+            style={{ backgroundColor: "var(--color-button-primary)" }}
+            className="btn-base text-white px-4 py-2.5 text-body font-medium shadow-sm hover-lift hover:opacity-90 whitespace-nowrap"
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Application</span>
@@ -194,16 +195,16 @@ export function ApplicationsTable({
       </div>
 
       {/* Mobile: card list */}
-      <div className="md:hidden flex flex-col gap-2">
+      <div className="md:hidden flex flex-col gap-3">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-white px-6 py-14 text-center">
-            <div className="mb-4 rounded-2xl bg-zinc-50 p-3 text-zinc-500">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/50 px-6 py-16 text-center">
+            <div className="mb-4 rounded-xl bg-white p-3 text-zinc-400">
               <EmptyStateIcon className="h-6 w-6" />
             </div>
-            <h3 className="text-[15px] font-medium text-zinc-900">
+            <h3 className="text-heading-sm text-zinc-900">
               No applications yet
             </h3>
-            <p className="mt-2 max-w-[240px] text-[13px] leading-5 text-zinc-500">
+            <p className="mt-2 max-w-[240px] text-body text-zinc-500">
               Start by adding your first job application.
             </p>
             <button
@@ -212,7 +213,8 @@ export function ApplicationsTable({
                 setEditing(null);
                 setFormOpen(true);
               }}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#0f1117] px-4 py-2 text-[13px] font-medium text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#171a22] hover:shadow-md"
+              style={{ backgroundColor: "var(--color-button-primary)" }}
+              className="mt-6 btn-base text-white px-4 py-2.5 text-body font-medium shadow-sm hover-lift hover:opacity-90"
             >
               <Plus className="h-4 w-4" />
               Add Application
@@ -222,39 +224,39 @@ export function ApplicationsTable({
           filtered.map((app) => (
             <div
               key={app.id}
-              className="bg-white border border-zinc-200/80 rounded-lg px-4 py-3.5"
+              className="card-base px-4 py-3.5 transition-all"
             >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="min-w-0">
-                  <p className="font-medium text-zinc-900 text-[14px] truncate">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-zinc-900 text-body truncate">
                     {app.company}
                   </p>
-                  <p className="text-zinc-500 text-[12px] truncate mt-0.5">
+                  <p className="text-zinc-500 text-body-sm truncate mt-1">
                     {app.position}
                   </p>
                 </div>
                 <StatusBadge status={app.status} />
               </div>
-              <div className="flex items-center justify-between mt-2.5">
-                <div className="text-[11px] text-zinc-400 space-y-0.5">
+              <div className="flex items-center justify-between gap-3 pt-3 border-t border-zinc-100">
+                <div className="text-body-xs text-zinc-500 space-y-0.5 flex-1 min-w-0">
                   <p>Applied: {fmtDate(app.appliedAt)}</p>
                   {app.notes && (
-                    <p className="truncate max-w-50">{app.notes}</p>
+                    <p className="truncate">{app.notes}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => {
                       setEditing(app);
                       setFormOpen(true);
                     }}
                     aria-label="Edit"
-                    className="p-1.5 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                    className="p-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -275,8 +277,8 @@ export function ApplicationsTable({
       </div>
 
       {/* Desktop: table */}
-      <div className="hidden md:block bg-white border border-zinc-200/80 rounded-lg overflow-hidden">
-        <table className="w-full text-[13px] table-fixed">
+      <div className="hidden md:block bg-white border border-zinc-200/80 rounded-2xl overflow-hidden shadow-sm">
+        <table className="w-full text-body table-fixed">
           <colgroup>
             <col style={{ width: "22%" }} />
             <col style={{ width: "28%" }} />
@@ -286,12 +288,12 @@ export function ApplicationsTable({
             <col style={{ width: "6%" }} />
           </colgroup>
           <thead>
-            <tr className="bg-zinc-50/80">
+            <tr className="bg-zinc-50/80 border-b border-zinc-200">
               {["Company", "Position", "Status", "Applied", "Notes", ""].map(
                 (h, i) => (
                   <th
                     key={i}
-                    className="text-left px-3.5 py-2.5 text-[11px] font-medium text-zinc-400 uppercase tracking-wide border-b border-zinc-200"
+                    className="text-left px-4 py-3 text-label font-semibold border-b border-zinc-200"
                   >
                     {h}
                   </th>
@@ -302,15 +304,15 @@ export function ApplicationsTable({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-16">
+                <td colSpan={6} className="py-20">
                   <div className="flex flex-col items-center justify-center text-center">
-                    <div className="mb-4 rounded-2xl bg-zinc-50 p-3 text-zinc-500">
+                    <div className="mb-4 rounded-xl bg-zinc-50 p-3 text-zinc-400">
                       <EmptyStateIcon className="h-6 w-6" />
                     </div>
-                    <h3 className="text-[15px] font-medium text-zinc-900">
+                    <h3 className="text-heading-sm text-zinc-900">
                       No applications yet
                     </h3>
-                    <p className="mt-2 max-w-[260px] text-[13px] leading-5 text-zinc-500">
+                    <p className="mt-2 max-w-xs text-body text-zinc-500">
                       Start by adding your first job application.
                     </p>
                     <button
@@ -319,7 +321,8 @@ export function ApplicationsTable({
                         setEditing(null);
                         setFormOpen(true);
                       }}
-                      className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#0f1117] px-4 py-2 text-[13px] font-medium text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#171a22] hover:shadow-md"
+                      style={{ backgroundColor: "var(--color-button-primary)" }}
+                      className="mt-6 btn-base text-white px-4 py-2.5 text-body font-medium shadow-sm hover-lift hover:opacity-90"
                     >
                       <Plus className="h-4 w-4" />
                       Add Application
@@ -333,8 +336,8 @@ export function ApplicationsTable({
                   key={app.id}
                   className="border-b border-zinc-100 last:border-0 hover:bg-zinc-50/50 transition-colors"
                 >
-                  <td className="px-3.5 py-3">
-                    <p className="font-medium text-zinc-900 truncate">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-zinc-900 truncate">
                       {app.company}
                     </p>
                     {app.jobUrl && (
@@ -342,41 +345,41 @@ export function ApplicationsTable({
                         href={app.jobUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[11px] text-zinc-400 hover:text-zinc-600 truncate block"
+                        className="text-body-xs text-zinc-400 hover:text-zinc-600 truncate block mt-1"
                       >
                         {app.jobUrl.replace(/^https?:\/\//, "").slice(0, 30)}…
                       </a>
                     )}
                   </td>
-                  <td className="px-3.5 py-3 text-zinc-700 truncate">
+                  <td className="px-4 py-3 text-zinc-700 truncate">
                     {app.position}
                   </td>
-                  <td className="px-3.5 py-3">
+                  <td className="px-4 py-3">
                     <StatusBadge status={app.status} />
                   </td>
-                  <td className="px-3.5 py-3 text-zinc-400 text-[12px]">
+                  <td className="px-4 py-3 text-zinc-500 text-body-sm">
                     {fmtDate(app.appliedAt)}
                   </td>
                   <td
-                    className="px-3.5 py-3 text-zinc-400 text-[12px] truncate"
+                    className="px-4 py-3 text-zinc-500 text-body-sm truncate"
                     title={app.notes ?? ""}
                   >
                     {app.notes || "—"}
                   </td>
-                  <td className="px-3.5 py-3">
-                    <div className="flex items-center gap-0.5">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
                           setEditing(app);
                           setFormOpen(true);
                         }}
                         aria-label="Edit"
-                        className="p-1.5 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                        className="p-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          width="14"
-                          height="14"
+                          width="16"
+                          height="16"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"

@@ -1,24 +1,22 @@
 import { ApplicationStatus } from "@/types/application";
 
-const config: Record<ApplicationStatus, { label: string; className: string }> =
+const config: Record<ApplicationStatus, { label: string; bgVar: string; textVar: string }> =
   {
-    SAVED: { label: "Saved", className: "bg-[#F1EFE8] text-[#444441]" },
-    APPLIED: { label: "Applied", className: "bg-[#E6F1FB] text-[#0C447C]" },
-    INTERVIEW: { label: "Interview", className: "bg-[#EAF3DE] text-[#27500A]" },
-    ASSESSMENT: {
-      label: "Assessment",
-      className: "bg-[#FAEEDA] text-[#633806]",
-    },
-    REJECTED: { label: "Rejected", className: "bg-[#FCEBEB] text-[#791F1F]" },
-    OFFER: { label: "Offer", className: "bg-[#E1F5EE] text-[#085041]" },
-    GHOSTED: { label: "Ghosted", className: "bg-[#F1EFE8] text-[#888780]" },
+    SAVED: { label: "Saved", bgVar: "var(--color-status-saved-bg)", textVar: "var(--color-status-saved-text)" },
+    APPLIED: { label: "Applied", bgVar: "var(--color-status-applied-bg)", textVar: "var(--color-status-applied-text)" },
+    INTERVIEW: { label: "Interview", bgVar: "var(--color-status-interview-bg)", textVar: "var(--color-status-interview-text)" },
+    ASSESSMENT: { label: "Assessment", bgVar: "var(--color-status-assessment-bg)", textVar: "var(--color-status-assessment-text)" },
+    REJECTED: { label: "Rejected", bgVar: "var(--color-status-rejected-bg)", textVar: "var(--color-status-rejected-text)" },
+    OFFER: { label: "Offer", bgVar: "var(--color-status-offer-bg)", textVar: "var(--color-status-offer-text)" },
+    GHOSTED: { label: "Ghosted", bgVar: "var(--color-status-ghosted-bg)", textVar: "var(--color-status-ghosted-text)" },
   };
 
 export function StatusBadge({ status }: { status: ApplicationStatus }) {
-  const { label, className } = config[status];
+  const { label, bgVar, textVar } = config[status];
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${className}`}
+      className="inline-flex items-center px-3 py-1 rounded-full text-label-xs font-medium whitespace-nowrap transition-smooth"
+      style={{ backgroundColor: bgVar, color: textVar }}
     >
       {label}
     </span>

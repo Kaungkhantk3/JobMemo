@@ -5,7 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Font */
   --font-sans: 'DM Sans', system-ui, sans-serif;
+
+  /* Colors - UI Theme */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -38,6 +41,65 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Spacing Scale (4px base) */
+  --spacing-0: 0;
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+
+  /* Typography Scale */
+  --font-size-xs: 0.6875rem;
+  --font-size-sm: 0.75rem;
+  --font-size-base: 0.8125rem;
+  --font-size-lg: 0.9375rem;
+  --font-size-xl: 1.125rem;
+  --font-size-2xl: 1.5rem;
+
+  /* Shadow Scale */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
+
+  /* Z-Index Scale */
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-modal: 50;
+  --z-toast: 100;
+
+  /* Transition Timings */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 300ms ease-out;
+  --transition-slow: 500ms ease-out;
+
+  /* Brand Colors */
+  --color-sidebar-bg: #0f1117;
+  --color-button-primary: #0f1117;
+  --color-button-hover: #171a22;
+
+  /* Status Badge Colors */
+  --color-status-saved-bg: #f1efe8;
+  --color-status-saved-text: #444441;
+  --color-status-applied-bg: #e6f1fb;
+  --color-status-applied-text: #0c447c;
+  --color-status-interview-bg: #eaf3de;
+  --color-status-interview-text: #27500a;
+  --color-status-assessment-bg: #faeeda;
+  --color-status-assessment-text: #633806;
+  --color-status-rejected-bg: #fcebeb;
+  --color-status-rejected-text: #791f1f;
+  --color-status-offer-bg: #e1f5ee;
+  --color-status-offer-text: #085041;
+  --color-status-ghosted-bg: #f1efe8;
+  --color-status-ghosted-text: #888780;
 }
 
 body {
@@ -121,6 +183,71 @@ body {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Design System: Spacing Scale (4px base) */
+:root {
+  --spacing-0: 0;
+  --spacing-1: 0.25rem; /* 4px */
+  --spacing-2: 0.5rem; /* 8px */
+  --spacing-3: 0.75rem; /* 12px */
+  --spacing-4: 1rem; /* 16px */
+  --spacing-6: 1.5rem; /* 24px */
+  --spacing-8: 2rem; /* 32px */
+  --spacing-12: 3rem; /* 48px */
+  --spacing-16: 4rem; /* 64px */
+
+  /* Design System: Typography Scale */
+  --font-size-xs: 0.6875rem; /* 11px */
+  --font-size-sm: 0.75rem; /* 12px */
+  --font-size-base: 0.8125rem; /* 13px */
+  --font-size-lg: 0.9375rem; /* 15px */
+  --font-size-xl: 1.125rem; /* 18px */
+  --font-size-2xl: 1.5rem; /* 24px */
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.6;
+
+  /* Design System: Shadow Scale */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
+
+  /* Design System: Z-Index Scale */
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-modal: 50;
+  --z-toast: 100;
+
+  /* Design System: Transition Timings */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 300ms ease-out;
+  --transition-slow: 500ms ease-out;
+
+  /* Design System: Brand Colors (moved from magic numbers) */
+  --color-sidebar-bg: #0f1117;
+  --color-button-primary: #0f1117;
+  --color-button-hover: #171a22;
+
+  /* Status Badge Colors */
+  --color-status-saved-bg: #f1efe8;
+  --color-status-saved-text: #444441;
+  --color-status-applied-bg: #e6f1fb;
+  --color-status-applied-text: #0c447c;
+  --color-status-interview-bg: #eaf3de;
+  --color-status-interview-text: #27500a;
+  --color-status-assessment-bg: #faeeda;
+  --color-status-assessment-text: #633806;
+  --color-status-rejected-bg: #fcebeb;
+  --color-status-rejected-text: #791f1f;
+  --color-status-offer-bg: #e1f5ee;
+  --color-status-offer-text: #085041;
+  --color-status-ghosted-bg: #f1efe8;
+  --color-status-ghosted-text: #888780;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -130,5 +257,126 @@ body {
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  /* Typography Utilities */
+  .text-label-xs {
+    @apply text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-zinc-500;
+  }
+
+  .text-label-sm {
+    @apply text-[0.75rem] font-medium uppercase tracking-[0.12em] text-zinc-500;
+  }
+
+  .text-label {
+    @apply text-[0.75rem] font-medium uppercase tracking-[0.18em] text-zinc-500;
+  }
+
+  .text-body-xs {
+    @apply text-[0.6875rem] leading-normal;
+  }
+
+  .text-body-sm {
+    @apply text-[0.75rem] leading-normal;
+  }
+
+  .text-body {
+    @apply text-[0.8125rem] leading-relaxed;
+  }
+
+  .text-body-lg {
+    @apply text-[0.9375rem] leading-relaxed;
+  }
+
+  .text-heading-sm {
+    @apply text-[1.125rem] font-semibold tracking-tight;
+  }
+
+  .text-heading {
+    @apply text-[1.5rem] font-semibold tracking-tight;
+  }
+
+  .text-heading-lg {
+    @apply text-[1.875rem] font-semibold tracking-tight;
+  }
+
+  /* Transition Utilities */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .transition-smooth-fast {
+    @apply transition-all duration-150 ease-out;
+  }
+
+  /* Shadow Utilities (supplementing Tailwind) */
+  .shadow-xs {
+    box-shadow: var(--shadow-xs);
+  }
+
+  .shadow-elevation-sm {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .shadow-elevation-md {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-elevation-lg {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .shadow-elevation-xl {
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Focus State Utilities */
+  .focus-visible-ring {
+    @apply focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/50;
+  }
+
+  /* Hover Lift Effect (for interactive cards) */
+  .hover-lift {
+    @apply transition-all hover:shadow-elevation-md;
+  }
+
+  /* Card Base Styling */
+  .card-base {
+    @apply rounded-2xl border border-zinc-200/80 bg-white shadow-sm;
+  }
+
+  .card-elevated {
+    @apply card-base transition-all hover:shadow-elevation-md;
+  }
+
+  /* Button Base Styling */
+  .btn-base {
+    @apply inline-flex items-center justify-center rounded-lg border border-transparent transition-smooth font-medium focus-visible-ring;
+  }
+
+  /* Input Base Styling */
+  .input-base {
+    @apply w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-body outline-none transition-colors focus-visible:border-zinc-400;
+  }
+
+  /* Grid Utilities */
+  .grid-cols-responsive-2 {
+    @apply grid grid-cols-2 md:grid-cols-2;
+  }
+
+  .grid-cols-responsive-4 {
+    @apply grid grid-cols-2 md:grid-cols-4;
+  }
+
+  /* Section Spacing */
+  .section-spacing {
+    @apply space-y-4 md:space-y-6;
+  }
+
+  /* Content Container */
+  .content-container {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 }
