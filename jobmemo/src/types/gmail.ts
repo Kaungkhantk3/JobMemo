@@ -53,6 +53,10 @@ export interface GmailSuggestion {
   threadId?: string | null;
   company?: string | null;
   position?: string | null;
+  subject?: string | null;
+  snippet?: string | null;
+  from?: string | null;
+  date?: string | null;
   status?: string | null;
   confidence?: number | null;
   hidden?: boolean;

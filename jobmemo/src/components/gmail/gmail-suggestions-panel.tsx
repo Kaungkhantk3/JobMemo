@@ -44,6 +44,37 @@ function SuggestionsSkeleton() {
   );
 }
 
+function formatRelativeDate(dateString?: string | null) {
+  if (!dateString) {
+    return "Recently";
+  }
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return "Recently";
+  }
+
+  const deltaMs = Date.now() - date.getTime();
+  const minutes = Math.floor(deltaMs / 60000);
+
+  if (minutes < 1) {
+    return "just now";
+  }
+
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export default function GmailSuggestionsPanel({
   onApplicationTracked,
   syncSignal = 0,
@@ -144,7 +175,7 @@ export default function GmailSuggestionsPanel({
   }, [loadSuggestions, syncSignal, syncSuggestions]);
 
   const lastSynced = useMemo(() => {
-    const latest = suggestions?.[0]?.syncedAt;
+    const latest = suggestions?.[0]?.date ?? suggestions?.[0]?.syncedAt;
     if (!latest) return "Never synced";
 
     const date = new Date(latest);
@@ -287,26 +318,34 @@ export default function GmailSuggestionsPanel({
               className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm transition-smooth hover:bg-zinc-50"
             >
               <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-semibold text-zinc-950 truncate">
-                    {suggestion.company ?? "Unknown company"}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-zinc-700 truncate">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[15px] font-semibold text-zinc-950 truncate">
+                      {suggestion.company ?? "Unknown company"}
+                    </p>
+                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                      {formatRelativeDate(
+                        suggestion.date ?? suggestion.syncedAt,
+                      )}
+                    </span>
+                  </div>
+
+                  <p className="text-sm font-medium text-zinc-700">
                     {suggestion.position ?? "Role not detected"}
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    {suggestion.notes ?? "Ready to review and import."}
+
+                  <p className="text-[15px] font-semibold leading-6 text-zinc-950 line-clamp-1">
+                    {suggestion.subject ?? "No subject"}
+                  </p>
+
+                  <p className="text-sm leading-6 text-zinc-600 line-clamp-2">
+                    {suggestion.snippet ?? suggestion.notes ?? ""}
                   </p>
                 </div>
 
                 <div className="flex shrink-0 flex-col items-end gap-2">
-                  <div className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500 shadow-sm">
-                    {suggestion.status ?? "Suggestion"}
-                  </div>
                   <div className="text-[12px] text-zinc-500">
-                    {suggestion.syncedAt
-                      ? new Date(suggestion.syncedAt).toLocaleDateString()
-                      : "Recently"}
+                    {formatRelativeDate(suggestion.date ?? suggestion.syncedAt)}
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
                     <button

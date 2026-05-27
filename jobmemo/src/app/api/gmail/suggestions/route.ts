@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { getRecentJobEmails, getSentApplicationEmails } from "@/lib/gmail";
 import { prisma } from "@/lib/prisma";
+
+function sortByDateDescending<
+  T extends { date?: string | null; syncedAt?: string | null },
+>(entries: T[]) {
+  return entries.sort((left, right) => {
+    const leftDate = new Date(left.date ?? left.syncedAt ?? 0).getTime();
+    const rightDate = new Date(right.date ?? right.syncedAt ?? 0).getTime();
+
+    return rightDate - leftDate;
+  });
+}
 
 export async function GET(request: Request) {
   try {
@@ -11,19 +23,32 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const account = await prisma.account.findFirst({
+      where: {
+        userId: session.user.id,
+        provider: "google",
+      },
+      select: {
+        access_token: true,
+        refresh_token: true,
+      },
+    });
+
+    if (!account?.access_token && !account?.refresh_token) {
+      return NextResponse.json(
+        { error: "Gmail account not connected" },
+        { status: 404 },
+      );
+    }
+
     const limit = new URL(request.url).searchParams.get("limit");
     const safeLimit = Math.min(Math.max(Number(limit ?? "8") || 8, 1), 10);
 
-    const suggestions = await prisma.gmailEmailReview.findMany({
+    const reviewRows = await prisma.gmailEmailReview.findMany({
       where: {
         userId: session.user.id,
-        hidden: false,
-        applicationId: null,
+        OR: [{ hidden: false, applicationId: null }, { reviewed: false }],
       },
-      orderBy: {
-        syncedAt: "desc",
-      },
-      take: safeLimit,
       select: {
         gmailMessageId: true,
         threadId: true,
@@ -37,24 +62,75 @@ export async function GET(request: Request) {
         source: true,
         syncedAt: true,
         notes: true,
+        applicationId: true,
       },
     });
 
+    const existingReviewIds = reviewRows
+      .filter((review) => review.hidden || review.applicationId)
+      .map((review) => review.gmailMessageId);
+
+    const skippedMessageIdsKey = existingReviewIds.join(",");
+
+    const [inboxEmails, sentEmails] = await Promise.all([
+      getRecentJobEmails(
+        account.access_token,
+        account.refresh_token,
+        "INBOX_ACTIVITY",
+        safeLimit,
+        skippedMessageIdsKey,
+      ),
+      getSentApplicationEmails(
+        account.access_token,
+        account.refresh_token,
+        safeLimit,
+        skippedMessageIdsKey,
+      ),
+    ]);
+
+    const reviewsById = new Map(
+      reviewRows.map((review) => [review.gmailMessageId, review]),
+    );
+
+    const suggestions = sortByDateDescending(
+      [...inboxEmails, ...sentEmails]
+        .filter((message) => !reviewsById.get(message.id)?.hidden)
+        .map((message) => {
+          const review = reviewsById.get(message.id);
+
+          console.info("[gmail-suggestions]", {
+            subject: message.subject,
+            from: message.from,
+            extractedCompany: message.company,
+            extractedRole: message.role,
+            snippet: message.snippet,
+          });
+
+          return {
+            id: message.id,
+            threadId: message.threadId,
+            company: review?.company ?? message.company,
+            position: review?.role ?? message.role,
+            subject: message.subject,
+            snippet: message.snippet,
+            from: message.from,
+            date: message.date,
+            status: review?.status ?? message.status,
+            confidence: review?.confidence ?? message.confidence,
+            hidden: review?.hidden ?? message.hidden,
+            userCorrectedStatus:
+              review?.userCorrectedStatus ?? message.userCorrectedStatus,
+            reviewed: review?.reviewed ?? message.reviewed,
+            source: review?.source ?? message.source,
+            syncedAt: review?.syncedAt?.toISOString() ?? message.syncedAt,
+            notes: review?.notes ?? message.notes,
+          };
+        })
+        .slice(0, safeLimit),
+    );
+
     return NextResponse.json({
-      suggestions: suggestions.map((suggestion) => ({
-        id: suggestion.gmailMessageId,
-        threadId: suggestion.threadId,
-        company: suggestion.company,
-        position: suggestion.role,
-        status: suggestion.status,
-        confidence: suggestion.confidence,
-        hidden: suggestion.hidden,
-        userCorrectedStatus: suggestion.userCorrectedStatus,
-        reviewed: suggestion.reviewed,
-        source: suggestion.source,
-        syncedAt: suggestion.syncedAt?.toISOString() ?? null,
-        notes: suggestion.notes,
-      })),
+      suggestions,
     });
   } catch (error) {
     console.error(error);
