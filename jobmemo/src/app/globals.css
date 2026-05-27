@@ -316,30 +316,29 @@ body {
     box-shadow: var(--shadow-xs);
   }
 
-  .shadow-elevation-sm {
+  .shadow-sm-custom {
     box-shadow: var(--shadow-sm);
   }
 
-  .shadow-elevation-md {
+  .shadow-md-custom {
     box-shadow: var(--shadow-md);
   }
 
-  .shadow-elevation-lg {
+  .shadow-lg-custom {
     box-shadow: var(--shadow-lg);
   }
 
-  .shadow-elevation-xl {
+  .shadow-xl-custom {
     box-shadow: var(--shadow-xl);
-  }
-
-  /* Focus State Utilities */
-  .focus-visible-ring {
-    @apply focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/50;
   }
 
   /* Hover Lift Effect (for interactive cards) */
   .hover-lift {
-    @apply transition-all hover:shadow-elevation-md;
+    @apply transition-all;
+  }
+
+  .hover-lift:hover {
+    box-shadow: var(--shadow-md);
   }
 
   /* Card Base Styling */
@@ -348,17 +347,21 @@ body {
   }
 
   .card-elevated {
-    @apply card-base transition-all hover:shadow-elevation-md;
+    @apply rounded-2xl border border-zinc-200/80 bg-white shadow-sm transition-all;
+  }
+
+  .card-elevated:hover {
+    box-shadow: var(--shadow-md);
   }
 
   /* Button Base Styling */
   .btn-base {
-    @apply inline-flex items-center justify-center rounded-lg border border-transparent transition-smooth font-medium focus-visible-ring;
+    @apply inline-flex items-center justify-center rounded-lg border border-transparent transition-all duration-300 text-sm font-medium focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/50;
   }
 
   /* Input Base Styling */
   .input-base {
-    @apply w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-body outline-none transition-colors focus-visible:border-zinc-400;
+    @apply w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none transition-all duration-200 focus-visible:border-zinc-400;
   }
 
   /* Grid Utilities */
