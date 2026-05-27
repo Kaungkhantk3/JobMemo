@@ -15,7 +15,7 @@ export function StatusBadge({ status }: { status: ApplicationStatus }) {
   const { label, bgVar, textVar } = config[status];
   return (
     <span
-      className="inline-flex items-center px-3 py-1 rounded-full text-label-xs font-medium whitespace-nowrap transition-smooth"
+      className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide whitespace-nowrap transition-all"
       style={{ backgroundColor: bgVar, color: textVar }}
     >
       {label}
