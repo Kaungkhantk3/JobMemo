@@ -343,11 +343,11 @@ body {
 
   /* Card Base Styling */
   .card-base {
-    @apply rounded-2xl border border-zinc-200/80 bg-white shadow-sm;
+    @apply rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all;
   }
 
   .card-elevated {
-    @apply rounded-2xl border border-zinc-200/80 bg-white shadow-sm transition-all;
+    @apply rounded-2xl border border-zinc-300/70 bg-white shadow-sm transition-all;
   }
 
   .card-elevated:hover {

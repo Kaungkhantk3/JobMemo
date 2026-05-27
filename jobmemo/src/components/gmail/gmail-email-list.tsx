@@ -78,6 +78,7 @@ export function GmailEmailList({
   errorMessage,
   emptyTitle = "No matching Gmail messages yet",
   emptyDescription = "JobMemo checks the latest inbox and sent mail for relevant job activity.",
+  onSync,
   onReviewEmail,
   onHideEmail,
   actionsEnabled = true,
@@ -90,6 +91,7 @@ export function GmailEmailList({
   errorMessage?: string;
   emptyTitle?: string;
   emptyDescription?: string;
+  onSync?: () => void | Promise<void>;
   onReviewEmail: (email: GmailMessage) => void;
   onHideEmail: (emailId: string) => void;
   actionsEnabled?: boolean;
@@ -101,17 +103,17 @@ export function GmailEmailList({
 
   if (errorMessage) {
     return (
-      <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
-        <div className="border-b border-zinc-200/80 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
+      <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-smooth">
+        <div className="border-b border-zinc-200 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
                 <Sparkles className="h-3.5 w-3.5" />
                 {mailboxLabel}
               </div>
-              <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+              <h2 className="mt-4 text-heading-sm md:text-heading text-zinc-950">
                 {title}
-              </h1>
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 md:text-[15px]">
                 {description}
               </p>
@@ -142,17 +144,17 @@ export function GmailEmailList({
 
   if (emails.length === 0) {
     return (
-      <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
-        <div className="border-b border-zinc-200/80 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
+      <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-smooth">
+        <div className="border-b border-zinc-200 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
                 <Sparkles className="h-3.5 w-3.5" />
                 {mailboxLabel}
               </div>
-              <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+              <h2 className="mt-4 text-heading-sm md:text-heading text-zinc-950">
                 {title}
-              </h1>
+              </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 md:text-[15px]">
                 {description}
               </p>
@@ -169,15 +171,39 @@ export function GmailEmailList({
             <div className="rounded-2xl bg-white p-3 text-zinc-500 shadow-sm">
               <SearchX className="h-6 w-6" />
             </div>
-            <h2 className="mt-4 text-[18px] font-semibold text-zinc-950">
+            <h3 className="mt-4 text-[18px] font-semibold text-zinc-950">
               {emptyTitle}
-            </h2>
+            </h3>
             <p className="mt-2 max-w-md text-[13px] leading-6 text-zinc-500">
               {emptyDescription}
             </p>
-            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] text-zinc-600 shadow-sm">
-              <TimerReset className="h-3.5 w-3.5" />
-              Last synced {syncedAtLabel}
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              {onSync ? (
+                <button
+                  type="button"
+                  onClick={() => void onSync()}
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-[13px] font-medium text-zinc-700 shadow-sm transition-smooth hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                >
+                  <RefreshCcw className="h-4 w-4" />
+                  Sync Gmail
+                </button>
+              ) : (
+                <ConnectGmailButton label="Connect Gmail" />
+              )}
+
+              <button
+                type="button"
+                onClick={() => (window.location.href = "/applications")}
+                className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-[13px] font-medium text-zinc-700 shadow-sm transition-smooth hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              >
+                <Mail className="h-4 w-4" />
+                Add application
+              </button>
+
+              <div className="w-full mt-3 inline-flex items-center gap-2 justify-center rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] text-zinc-600 shadow-sm">
+                <TimerReset className="h-3.5 w-3.5" />
+                Last synced {syncedAtLabel}
+              </div>
             </div>
           </div>
         </div>

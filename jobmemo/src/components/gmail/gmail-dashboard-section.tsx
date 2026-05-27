@@ -64,9 +64,7 @@ function StatCard({
     <div className="card-elevated">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-label-xs mb-2">
-            {label}
-          </p>
+          <p className="text-label-xs mb-2">{label}</p>
           <p className="text-3xl md:text-4xl font-semibold tracking-tight text-zinc-950">
             {value}
           </p>
@@ -406,7 +404,7 @@ export function GmailDashboardSection({
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
-            className="rounded-2xl border border-zinc-200/80 bg-white px-4 py-4 shadow-sm"
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm transition-smooth hover:shadow-sm"
           >
             <div className="h-3 w-20 animate-pulse rounded bg-zinc-200" />
             <div className="mt-3 h-8 w-14 animate-pulse rounded bg-zinc-200" />
@@ -419,8 +417,8 @@ export function GmailDashboardSection({
 
   function renderLoadingList() {
     return (
-      <div className="rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
-        <div className="border-b border-zinc-200/80 px-5 py-5 md:px-6">
+      <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm transition-smooth">
+        <div className="border-b border-zinc-200 px-5 py-5 md:px-6">
           <div className="h-5 w-28 animate-pulse rounded-full bg-zinc-200" />
           <div className="mt-4 h-8 w-72 max-w-full animate-pulse rounded bg-zinc-200" />
           <div className="mt-3 h-4 w-full max-w-2xl animate-pulse rounded bg-zinc-100" />
@@ -445,15 +443,15 @@ export function GmailDashboardSection({
   }
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
-      <div className="border-b border-zinc-200/80 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
+    <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-smooth">
+      <div className="border-b border-zinc-200 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
               <Sparkles className="h-3.5 w-3.5" />
               Gmail dashboard
             </div>
-            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+            <h2 className="mt-4 text-heading-sm md:text-heading text-zinc-950">
               Job emails and follow-up status
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 md:text-[15px]">
@@ -492,7 +490,7 @@ export function GmailDashboardSection({
               type="button"
               onClick={() => void onSyncGmail()}
               disabled={syncing}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[12px] font-medium text-zinc-700 shadow-sm transition-smooth hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCcw
                 className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
@@ -561,13 +559,11 @@ export function GmailDashboardSection({
           {loading ? (
             renderLoadingList()
           ) : activeView === "NEEDS_REVIEW" ? (
-            <section className="card-base border-zinc-200/80 shadow-sm">
-              <div className="border-b border-zinc-200/80 px-5 py-4 md:px-6">
+            <section className="card-base border-zinc-200 shadow-sm">
+              <div className="border-b border-zinc-200 px-5 py-4 md:px-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-label-xs mb-2">
-                      Needs review
-                    </p>
+                    <p className="text-label-xs mb-2">Needs review</p>
                     <h2 className="text-heading-sm md:text-heading text-zinc-950">
                       Emails that need your confirmation
                     </h2>
@@ -590,6 +586,7 @@ export function GmailDashboardSection({
                   description="Confirm the right status or hide anything that is not job-related."
                   mailboxLabel="Needs review"
                   syncedAtLabel={syncedAtLabel}
+                  onSync={onSyncGmail}
                   emptyTitle="No emails need review"
                   emptyDescription="Every visible email in this mailbox has enough confidence and metadata to stay in the main list."
                   onReviewEmail={openReviewModal}
@@ -605,6 +602,7 @@ export function GmailDashboardSection({
               description={activeDescription}
               mailboxLabel={activeMailboxLabel}
               syncedAtLabel={syncedAtLabel}
+              onSync={onSyncGmail}
               errorMessage={activeError}
               emptyTitle="No relevant emails yet"
               emptyDescription="JobMemo is waiting for job-related Gmail activity that matches your current mailbox."

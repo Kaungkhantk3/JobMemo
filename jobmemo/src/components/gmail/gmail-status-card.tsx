@@ -40,17 +40,17 @@ export function GmailStatusCard({
       : "Connect Gmail";
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-sm">
-      <div className="border-b border-zinc-200/80 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
+    <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-smooth">
+      <div className="border-b border-zinc-200 bg-linear-to-r from-zinc-50 to-white px-5 py-5 md:px-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
               <ShieldCheck className="h-3.5 w-3.5" />
               Gmail foundation
             </div>
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+            <h2 className="mt-4 text-heading-sm md:text-heading text-zinc-950">
               Prepare JobMemo to sync Gmail later.
-            </h1>
+            </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 md:text-[15px]">
               Connect Gmail access now so JobMemo can read job-related mail in a
               later phase without changing your current workflow.
