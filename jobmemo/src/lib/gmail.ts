@@ -823,7 +823,7 @@ const cachedGetRecentJobEmails = unstable_cache(
     ),
   ["recent-job-emails"],
   {
-    revalidate: 60,
+    revalidate: 300,
   },
 );
 

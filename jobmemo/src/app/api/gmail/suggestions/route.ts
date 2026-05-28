@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { jsonError } from "@/lib/api";
 import { getRecentJobEmails, getSentApplicationEmails } from "@/lib/gmail";
 import { prisma } from "@/lib/prisma";
 
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return jsonError("Unauthorized", 401);
     }
 
     const account = await prisma.account.findFirst({
@@ -35,10 +36,7 @@ export async function GET(request: Request) {
     });
 
     if (!account?.access_token && !account?.refresh_token) {
-      return NextResponse.json(
-        { error: "Gmail account not connected" },
-        { status: 404 },
-      );
+      return jsonError("Gmail account not connected", 404);
     }
 
     const limit = new URL(request.url).searchParams.get("limit");
@@ -129,15 +127,18 @@ export async function GET(request: Request) {
         .slice(0, safeLimit),
     );
 
-    return NextResponse.json({
-      suggestions,
-    });
+    return NextResponse.json(
+      { suggestions },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "s-maxage=60, stale-while-revalidate=30",
+        },
+      },
+    );
   } catch (error) {
     console.error(error);
 
-    return NextResponse.json(
-      { error: "Failed to load Gmail suggestions" },
-      { status: 500 },
-    );
+    return jsonError("Failed to load Gmail suggestions", 500);
   }
 }

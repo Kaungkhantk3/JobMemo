@@ -84,6 +84,24 @@ export default function GmailSuggestionsPanel({
   syncSignal?: number;
   limit?: number;
 }) {
+  // Simple in-memory client cache to avoid refetching on navigation.
+  // TTL is 60s by default.
+  // This lives at module scope so multiple mounts share the cache.
+  // eslint-disable-next-line import/no-mutable-exports
+  // Note: kept minimal to avoid adding new dependencies like SWR.
+  const SUGGESTIONS_TTL = 60_000;
+
+  // Module-scope cache (shared across mounts)
+  // @ts-ignore - module scoped cache
+  if (!(global as any).__gmailSuggestionsCache) {
+    // @ts-ignore
+    (global as any).__gmailSuggestionsCache = { ts: 0, data: null };
+  }
+  // @ts-ignore
+  const suggestionsCache = (global as any).__gmailSuggestionsCache as {
+    ts: number;
+    data: GmailSuggestion[] | null;
+  };
   const [suggestions, setSuggestions] = useState<GmailSuggestion[] | null>(
     null,
   );
@@ -98,15 +116,26 @@ export default function GmailSuggestionsPanel({
   const loadSuggestions = useCallback(
     async (quiet = false) => {
       try {
+        // Serve from in-memory cache when not doing a forced refresh
+        const now = Date.now();
+        if (
+          !quiet &&
+          suggestionsCache.data &&
+          now - suggestionsCache.ts < SUGGESTIONS_TTL
+        ) {
+          setSuggestions(suggestionsCache.data);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+
         if (quiet) {
           setRefreshing(true);
         } else {
           setLoading(true);
         }
 
-        const response = await fetch(`/api/gmail/suggestions?limit=${limit}`, {
-          cache: "no-store",
-        });
+        const response = await fetch(`/api/gmail/suggestions?limit=${limit}`);
 
         const payload = (await response
           .json()
@@ -116,8 +145,13 @@ export default function GmailSuggestionsPanel({
           throw new Error(payload.error || "Failed to load Gmail suggestions");
         }
 
-        setSuggestions(payload.suggestions ?? []);
+        const list = payload.suggestions ?? [];
+        setSuggestions(list);
         setError(null);
+
+        // update in-memory cache
+        suggestionsCache.ts = Date.now();
+        suggestionsCache.data = list;
       } catch (loadError) {
         setError(
           loadError instanceof Error
