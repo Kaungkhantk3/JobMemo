@@ -1,5 +1,5 @@
 import { prisma } from "../src/lib/prisma";
-import { createGmailClient, getRecentJobEmails } from "../src/lib/gmail";
+import { fetchJobEmails } from "../src/lib/gmail";
 
 async function main() {
   const account = await prisma.account.findFirst({
@@ -26,8 +26,6 @@ async function main() {
   });
 
   try {
-    // Call the non-cached fetch helper directly to avoid Next.js unstable_cache
-    const { fetchJobEmails } = await import("../src/lib/gmail");
     const emails = await fetchJobEmails(
       account.access_token,
       account.refresh_token,

@@ -24,6 +24,57 @@ type SuggestionsResponse = {
   error?: string;
 };
 
+type SuggestionsCacheEntry = {
+  ts: number;
+  limit: number;
+  suggestions: GmailSuggestion[];
+};
+
+const SUGGESTIONS_CACHE_KEY = "jobmemo.gmailSuggestionsCache";
+const SUGGESTIONS_TTL_MS = 60_000;
+
+function readSuggestionsCache(limit: number): GmailSuggestion[] | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(SUGGESTIONS_CACHE_KEY);
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as SuggestionsCacheEntry;
+
+    if (parsed.limit !== limit) {
+      return null;
+    }
+
+    if (Date.now() - parsed.ts > SUGGESTIONS_TTL_MS) {
+      return null;
+    }
+
+    return parsed.suggestions;
+  } catch {
+    return null;
+  }
+}
+
+function writeSuggestionsCache(limit: number, suggestions: GmailSuggestion[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const entry: SuggestionsCacheEntry = {
+    ts: Date.now(),
+    limit,
+    suggestions,
+  };
+
+  window.sessionStorage.setItem(SUGGESTIONS_CACHE_KEY, JSON.stringify(entry));
+}
+
 function SuggestionsSkeleton() {
   return (
     <section className="card-base p-4 shadow-sm">
@@ -84,24 +135,6 @@ export default function GmailSuggestionsPanel({
   syncSignal?: number;
   limit?: number;
 }) {
-  // Simple in-memory client cache to avoid refetching on navigation.
-  // TTL is 60s by default.
-  // This lives at module scope so multiple mounts share the cache.
-  // eslint-disable-next-line import/no-mutable-exports
-  // Note: kept minimal to avoid adding new dependencies like SWR.
-  const SUGGESTIONS_TTL = 60_000;
-
-  // Module-scope cache (shared across mounts)
-  // @ts-ignore - module scoped cache
-  if (!(global as any).__gmailSuggestionsCache) {
-    // @ts-ignore
-    (global as any).__gmailSuggestionsCache = { ts: 0, data: null };
-  }
-  // @ts-ignore
-  const suggestionsCache = (global as any).__gmailSuggestionsCache as {
-    ts: number;
-    data: GmailSuggestion[] | null;
-  };
   const [suggestions, setSuggestions] = useState<GmailSuggestion[] | null>(
     null,
   );
@@ -116,17 +149,15 @@ export default function GmailSuggestionsPanel({
   const loadSuggestions = useCallback(
     async (quiet = false) => {
       try {
-        // Serve from in-memory cache when not doing a forced refresh
-        const now = Date.now();
-        if (
-          !quiet &&
-          suggestionsCache.data &&
-          now - suggestionsCache.ts < SUGGESTIONS_TTL
-        ) {
-          setSuggestions(suggestionsCache.data);
-          setError(null);
-          setLoading(false);
-          return;
+        if (!quiet) {
+          const cachedSuggestions = readSuggestionsCache(limit);
+
+          if (cachedSuggestions) {
+            setSuggestions(cachedSuggestions);
+            setError(null);
+            setLoading(false);
+            return;
+          }
         }
 
         if (quiet) {
@@ -148,10 +179,7 @@ export default function GmailSuggestionsPanel({
         const list = payload.suggestions ?? [];
         setSuggestions(list);
         setError(null);
-
-        // update in-memory cache
-        suggestionsCache.ts = Date.now();
-        suggestionsCache.data = list;
+        writeSuggestionsCache(limit, list);
       } catch (loadError) {
         setError(
           loadError instanceof Error
