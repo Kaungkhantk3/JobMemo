@@ -53,6 +53,10 @@ const EXCLUDED_SUBJECT_PHRASES = [
   "password reset",
   "security alert",
   "otp",
+  "deadline",
+  "admissions",
+  "free trial",
+  "trial",
 ];
 
 const TRUSTED_RECRUITER_DOMAINS = [
@@ -65,6 +69,11 @@ const TRUSTED_RECRUITER_DOMAINS = [
   "workable.com",
   "recruitee.com",
   "jobs.lever.co",
+  "teamtailor.com",
+  "breezy.hr",
+  "breezyhr.com",
+  "jobvite.com",
+  "bamboohr.com",
 ];
 
 const NOISY_NOREPLY_PHRASES = [
@@ -192,11 +201,17 @@ const DOMAIN_BONUS = [
   "careers.tiktok.com",
   "workday.com",
   "recruitee.com",
+  "teamtailor.com",
+  "breezy.hr",
+  "breezyhr.com",
+  "jobvite.com",
+  "bamboohr.com",
+  "ziprecruiter.com",
 ];
 
 const DOMAIN_PENALTY = ["coursera.org", "udemy.com", "linkedin.com"];
 
-const CLASSIFICATION_THRESHOLD = 3;
+const CLASSIFICATION_THRESHOLD = 4;
 
 const ROLE_KEYWORDS = [
   "engineer",
@@ -352,6 +367,10 @@ function hasExcludedContent(subject: string, from: string, snippet: string) {
     "courses",
     "training",
     "learning",
+    "deadline",
+    "admissions",
+    "free trial",
+    "trial",
     "verification code",
     "password reset",
     "security alert",
@@ -513,7 +532,7 @@ export function classifyJobEmail(email: {
   }
 
   if (penaltyDomain) {
-    confidence -= 0.25;
+    confidence -= 0.35;
   }
 
   confidence = Math.max(0, Math.min(1, confidence));
@@ -688,7 +707,7 @@ function normalizeApplicationState(
   return undefined;
 }
 
-async function fetchJobEmails(
+export async function fetchJobEmails(
   accessToken: string | null | undefined,
   refreshToken: string | null | undefined,
   mailbox: GmailMailboxKind,
